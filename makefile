@@ -15,7 +15,7 @@ CREATE_WAIT ?= 120s
 KIND_CONFIG ?= kind-three-node.yaml
 
 .DEFAULT_GOAL := help
-.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters install-monitoring
+.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters install-monitoring hpa-load hpa-watch install-metrics
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -53,7 +53,7 @@ delete-cluster: check-deps ## Delete the kind cluster and delete port forwards
 use-context: check-deps ## Switch kubectl context to this cluster
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)
 
-start-cluster: create-cluster start-docker-registry use-context ## Create cluster and switch kubectl context
+start-cluster: create-cluster start-docker-registry use-context install-metrics-server ## Create cluster and switch kubectl context
 
 stop-cluster: stop-docker-registry delete-cluster  ## Delete cluster and stop docker registry
 
@@ -86,4 +86,42 @@ current-context: ## Show current kubectl context
 
 list-clusters: check-deps ## List existing kind clusters
 	@$(KIND) get clusters
+
+# ------------------------------
+# HPA load test helpers
+# ------------------------------
+
+hpa-load: ## Port-forward app svc and generate load (uses hey if available)
+	@echo "Starting port-forward to svc/app on :8080..."
+	@kubectl -n app port-forward svc/app 8080:80 >/tmp/pf-app.log 2>&1 & echo $$! > /tmp/pf-app.pid
+	@sleep 2
+	@if command -v hey >/dev/null 2>&1; then \
+	  echo "Running hey load for 2m with 50 concurrent..."; \
+	  hey -z 2m -c 50 http://localhost:8080/work; \
+	else \
+	  echo "hey not installed; falling back to curl loop"; \
+	  for i in $$(seq 1 2400); do curl -s -o /dev/null http://localhost:8080/work & sleep 0.05; done; \
+	  wait; \
+	fi
+	@kill $$(cat /tmp/pf-app.pid) >/dev/null 2>&1 || true
+	@rm -f /tmp/pf-app.pid
+
+hpa-watch: ## Watch HPA and deployment scaling
+	@echo "Watching HPA (Ctrl-C to stop)"
+	@$(KUBECTL) get hpa -n app -w
+
+# ------------------------------
+# Metrics Server (metrics.k8s.io) install for kind
+# ------------------------------
+
+install-metrics-server: ## Install metrics-server and patch flags for kind, then verify
+	@echo "Installing metrics-server..."
+	@$(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml | cat
+	@echo "Patching metrics-server for kind (insecure TLS to kubelet)..."
+	@$(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' | cat || true
+	@echo "Waiting for metrics-server rollout..."
+	@$(KUBECTL) -n kube-system rollout status deploy/metrics-server --timeout=120s | cat
+	@echo "Verifying metrics API..."
+	@$(KUBECTL) get apiservices | grep metrics | cat
+	@$(KUBECTL) top pods -A | head -n 5 | cat || true
 
