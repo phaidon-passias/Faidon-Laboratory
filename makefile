@@ -13,6 +13,9 @@ KUBECTL ?= kubectl
 KUBE_CONTEXT ?= kind-$(CLUSTER_NAME)
 CREATE_WAIT ?= 120s
 KIND_CONFIG ?= kind-three-node.yaml
+HPA_DURATION ?= 120        # seconds
+HPA_CONCURRENCY ?= 50      # parallel clients
+HPA_PAUSE ?= 0.1    
 
 .DEFAULT_GOAL := help
 .PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters install-monitoring hpa-load hpa-watch install-metrics
@@ -91,25 +94,39 @@ list-clusters: check-deps ## List existing kind clusters
 # HPA load test helpers
 # ------------------------------
 
-hpa-load: ## Port-forward app svc and generate load (uses hey if available)
-	@echo "Starting port-forward to svc/app on :8080..."
-	@kubectl -n app port-forward svc/app 8080:80 >/tmp/pf-app.log 2>&1 & echo $$! > /tmp/pf-app.pid
-	@sleep 2
-	@if command -v hey >/dev/null 2>&1; then \
-	  echo "Running hey load for 2m with 50 concurrent..."; \
-	  hey -z 2m -c 50 http://localhost:8080/work; \
+hpa-load: ## Port-forward svc/app and generate load (hey if available; robust cleanup)
+	@set -e; \
+	echo "Starting port-forward to svc/app on :8080..."; \
+	kubectl -n app port-forward svc/app 8080:80 >/tmp/pf-app.log 2>&1 & echo $$! > /tmp/pf-app.pid; \
+	cleanup() { kill $$(cat /tmp/pf-app.pid) >/dev/null 2>&1 || true; rm -f /tmp/pf-app.pid; }; \
+	trap cleanup EXIT INT TERM; \
+	echo "Waiting for app readiness on /healthz..."; \
+	for i in $$(seq 1 30); do \
+	  if curl -sf http://localhost:8080/healthz >/dev/null; then echo "App is ready."; break; fi; \
+	  sleep 1; \
+	  if [ $$i -eq 30 ]; then echo "App did not become ready in time"; exit 1; fi; \
+	done; \
+	if command -v hey >/dev/null 2>&1; then \
+	  echo "Running hey: duration=$(HPA_DURATION)s, concurrency=$(HPA_CONCURRENCY)"; \
+	  hey -z $${HPA_DURATION}s -c $(HPA_CONCURRENCY) http://localhost:8080/work; \
 	else \
-	  echo "hey not installed; falling back to curl loop"; \
-	  for i in $$(seq 1 2400); do curl -s -o /dev/null http://localhost:8080/work & sleep 0.05; done; \
-	  wait; \
+	  echo "hey not installed; using curl fallback"; \
+	  end=$$(($$(date +%s)+$(HPA_DURATION))); \
+	  while [ $$(date +%s) -lt $$end ]; do \
+	    for i in $$(seq 1 $(HPA_CONCURRENCY)); do curl -s -o /dev/null http://localhost:8080/work & done; \
+	    wait; \
+	    sleep $(HPA_PAUSE); \
+	  done; \
 	fi
-	@kill $$(cat /tmp/pf-app.pid) >/dev/null 2>&1 || true
-	@rm -f /tmp/pf-app.pid
 
 hpa-watch: ## Watch HPA and deployment scaling
 	@echo "Watching HPA (Ctrl-C to stop)"
 	@$(KUBECTL) get hpa -n app -w
 
+hpa-stop: ## Stop port-forward (if left running)
+	@kill $$(cat /tmp/pf-app.pid) >/dev/null 2>&1 || true
+	@rm -f /tmp/pf-app.pid
+	
 # ------------------------------
 # Metrics Server (metrics.k8s.io) install for kind
 # ------------------------------
