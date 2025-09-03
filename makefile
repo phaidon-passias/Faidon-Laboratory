@@ -75,7 +75,80 @@ cleanup-app: ## Clean up app namespace
 	@echo "App namespace cleaned up"
 
 cleanup-all: cleanup-app cleanup-monitoring ## Clean up all application resources
-	@echo "All application resources cleaned up"
+	@echo "All application resources cleaed up"
+
+# ------------------------------
+# FluxCD GitOps Management
+# ------------------------------
+
+install-flux-cli: ## Install FluxCD CLI
+	@echo "Installing FluxCD CLI..."
+	@if command -v brew >/dev/null 2>&1; then \
+		brew install fluxcd/tap/flux; \
+	else \
+		echo "Homebrew not found. Please install FluxCD CLI manually:"; \
+		echo "  curl -s https://fluxcd.io/install.sh | sudo bash"; \
+		exit 1; \
+	fi
+
+bootstrap-flux: ## Bootstrap FluxCD to the cluster
+	@echo "Bootstrapping FluxCD..."
+	@if ! command -v flux >/dev/null 2>&1; then \
+		echo "FluxCD CLI not found. Run 'make install-flux-cli' first"; \
+		exit 1; \
+	fi
+	@flux bootstrap git \
+		--url=https://github.com/$(GITHUB_USER)/$(GITHUB_REPO) \
+		--branch=main \
+		--path=flux-cd/bootstrap \
+		--namespace=flux-system \
+		--components-extra=image-reflector-controller,image-automation-controller
+
+flux-status: ## Check FluxCD status
+	@echo "FluxCD Git Repository Status:"
+	@flux get sources git
+	@echo ""
+	@echo "FluxCD Kustomizations:"
+	@flux get kustomizations
+	@echo ""
+	@echo "FluxCD Helm Releases:"
+	@flux get helmreleases
+
+flux-logs: ## Follow FluxCD logs
+	@echo "Following FluxCD logs (Ctrl-C to stop)..."
+	@flux logs --follow
+
+flux-suspend: ## Suspend FluxCD reconciliation
+	@echo "Suspending FluxCD reconciliation..."
+	@flux suspend kustomization --all
+
+flux-resume: ## Resume FluxCD reconciliation
+	@echo "Resuming FluxCD reconciliation..."
+	@flux resume kustomization --all
+
+# ------------------------------
+# Environment Management
+# ------------------------------
+
+deploy-dev: ## Deploy dev environment via GitOps
+	@echo "Deploying dev environment..."
+	@kubectl apply -k apps/mock-cluster-aka-namespaces/dev
+
+deploy-staging: ## Deploy staging environment via GitOps
+	@echo "Deploying staging environment..."
+	@kubectl apply -k apps/mock-cluster-aka-namespaces/staging
+
+deploy-production: ## Deploy production environment via GitOps
+	@echo "Deploying production environment..."
+	@kubectl apply -k apps/mock-cluster-aka-namespaces/production
+
+# ------------------------------
+# Configuration
+# ------------------------------
+
+# GitHub Configuration (override these values)
+GITHUB_USER ?= phaidon-passias
+GITHUB_REPO ?= kaiko-assignment
 
 use-context: check-deps ## Switch kubectl context to this cluster
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)

@@ -266,3 +266,104 @@ The scripts demonstrate a proper multi-namespace setup:
 - **Network Policies**: Default-deny with explicit allow rules for monitoring → app communication
 - **Service Discovery**: DNS resolution working across namespace boundaries
 
+## GitOps
+
+### Structure of IaC
+
+✅ Decisions:
+Thread 1: Single cluster, 3 namespaces ✅
+Thread 2: Hybrid approach (Kustomize + Helm) ✅
+Thread 3: Monorepo with environment directories ✅
+Thread 4: Progressive environment configurations ✅
+Thread 5: FluxCD in separate namespace ✅
+
+#### Directory Organization and Design Decisions
+
+```
+flux-cd/                                    # Root directory for all GitOps-managed resources
+│                                           # Managed entirely by FluxCD controllers
+│
+├── foundation/                             # Cluster-wide, one-time setup configurations
+│   ├── cluster-rbac/                      # Cluster-wide RBAC, service accounts, cluster roles
+│   ├── cluster-storage/                    # Storage classes, persistent volumes, CSI drivers
+│   └── cluster-networking/                 # Cluster-wide networking (ingress controllers, CNI configs)
+│
+├── environments/                           # Environment-specific namespace definitions
+│   ├── dev/                               # Development environment namespace + basic configs
+│   ├── staging/                           # Staging environment namespace + basic configs
+│   ├── production/                        # Production environment namespace + basic configs
+│   └── monitoring/                        # Monitoring namespace + basic configs
+│
+├── applications/                           # Application definitions and configurations
+│   ├── base-app-config/                   # Base Kustomize configuration for the application
+│   │                                      # Contains: deployment, service, configmap, app-specific netpols
+│   ├── mock-cluster-aka-namespaces/       # Environment-specific Kustomize overlays
+│   │   ├── dev/                           # Dev environment patches (replicas=1, low resources, debug enabled)
+│   │   ├── staging/                       # Staging environment patches (replicas=2, medium resources)
+│   │   └── production/                    # Production environment patches (replicas=3+, high resources)
+│   └── values/                            # Environment-specific Helm values (moved from helm-charts/)
+│       ├── dev/                           # Dev environment Helm values
+│       ├── staging/                       # Staging environment Helm values
+│       └── production/                    # Production environment Helm values
+│
+├── infrastructure/                         # Shared infrastructure components across environments
+│   ├── monitoring-stack/                  # Prometheus, Grafana, alerting (shared across environments)
+│   ├── cross-namespace-netpols/           # Cross-namespace network policies (platform team managed)
+│   └── ingress-controllers/               # Ingress controllers, load balancers, service mesh
+│
+└── bootstrap/                              # FluxCD system configuration and bootstrap
+    ├── flux-system/                       # FluxCD system namespace (created by bootstrap)
+    └── flux-setup.sh                      # FluxCD installation and bootstrap script
+
+helm-charts/                                # Helm chart definitions (templating engine)
+└── app/                                   # Application Helm chart
+    ├── Chart.yaml                         # Chart metadata with Go templating capabilities
+    ├── default-values.yaml                # Base values for the application
+    └── templates/                         # Chart templates (to be created)
+```
+
+#### Key Design Decisions and Rationale
+
+##### 1. Separation of Concerns
+- **`foundation/`**: Cluster-wide configurations managed by platform engineers
+- **`environments/`**: Namespace definitions and basic environment setup
+- **`applications/`**: Application-specific configurations managed by application teams
+- **`infrastructure/`**: Shared components managed by platform engineers
+- **`bootstrap/`**: FluxCD system itself
+
+##### 2. Application values Directory Relocation Decision 
+**Original Structure**: `helm-charts/app/k8s/{dev,staging,production}/`
+**New Structure**: `flux-cd/applications/values/{dev,staging,production}/`
+
+**Rationale for Moving Values**:
+- **Application Cohesion**: Environment values are now co-located with application configurations
+- **FluxCD Proximity**: Values are closer to where FluxCD manages the application lifecycle
+- **Developer Experience**: Application teams work in one place for all app-related configs
+- **Logical Grouping**: Values are with the Kustomize overlays they relate to
+- **Clear Separation**: Helm charts focus on templating, values focus on environment configuration
+
+##### 3. Network Policy Organization
+- **App-specific netpols**: Located in `applications/base-app-config/` (managed by app teams) *tricky* maybe there can be a middleware in the creation of apps that creates PRs
+- **Cross-namespace netpols**: Located in `infrastructure/cross-namespace-netpols/` (managed by platform teams) *less tricky* we can create a set number of ports for our apps. Process.
+- **Cluster-wide netpols**: Located in `foundation/cluster-networking/` (managed by platform teams). This is used for general cluster-wide netpols we need
+
+**Rationale**: Platform engineers handle cross-cutting networking concerns, application teams focus on app-specific policies with a backend provided by Platform team.
+
+##### 4. Environment Configuration Strategy
+- **Development**: 1 replica, low resources, debug enabled, basic monitoring
+- **Staging**: 2 replicas, medium resources, debug disabled, full monitoring
+- **Production**: 3+ replicas, high resources, debug disabled, full monitoring + alerting
+
+##### 5. FluxCD Management Scope
+FluxCD manages everything in the `flux-cd/` directory, providing:
+- **GitOps workflow**: Commit → Auto-deploy
+- **Environment isolation**: Separate namespaces with different configurations
+- **Infrastructure as Code**: All configurations version controlled
+- **Progressive rollout**: Dev → Staging → Production deployment pipeline
+
+This structure enables clear ownership, minimal duplication, and maximum reusability while maintaining proper separation between platform and application concerns.
+
+
+
+
+TODO: Screenshots for everything.
