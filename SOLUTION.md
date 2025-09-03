@@ -12,6 +12,7 @@
 
 `teardown-all.sh`: Teardown all infrastructure/apps via make targets. Gooooooodbye 
 
+`debug-metrics-simple.sh`: Create a debug pod in the monitoring namespace and query app metrics using make targets. Cross namespace communication and accessibility while network policies allow namespace isolation
 
 
 ## How to run (scripts)

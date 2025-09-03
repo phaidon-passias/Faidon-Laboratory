@@ -47,16 +47,40 @@ create-cluster: check-deps ## Create kind cluster if missing, set context, insta
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)
 
 debug-container:
-	@$(KUBECTL) run -n default toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh 
+	@$(KUBECTL) run -n default toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
+
+debug-app: ## Debug container in app namespace
+	@$(KUBECTL) run -n app debug-toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
+
+debug-monitoring: ## Debug container in monitoring namespace
+	@$(KUBECTL) run -n monitoring debug-toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
+
+create-monitoring: ## Create monitoring namespace and resources
+	@echo "Creating monitoring namespace and resources..."
+	@$(KUBECTL) apply -f kubernetes_manifests/monitoring.yaml
+	@echo "Monitoring namespace created successfully" 
 
 delete-cluster: check-deps ## Delete the kind cluster and delete port forwards
 	@$(KIND) delete cluster --name $(CLUSTER_NAME)
 	lsof -iTCP -sTCP:LISTEN -n -P
 
+cleanup-monitoring: ## Clean up monitoring namespace
+	@echo "Cleaning up monitoring namespace..."
+	@$(KUBECTL) delete -f kubernetes_manifests/monitoring.yaml --ignore-not-found=true || true
+	@echo "Monitoring namespace cleaned up"
+
+cleanup-app: ## Clean up app namespace
+	@echo "Cleaning up app namespace..."
+	@$(KUBECTL) delete -f kubernetes_manifests/app.yaml --ignore-not-found=true || true
+	@echo "App namespace cleaned up"
+
+cleanup-all: cleanup-app cleanup-monitoring ## Clean up all application resources
+	@echo "All application resources cleaned up"
+
 use-context: check-deps ## Switch kubectl context to this cluster
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)
 
-start-cluster: create-cluster start-docker-registry use-context install-metrics-server ## Create cluster and switch kubectl context
+start-cluster: create-cluster start-docker-registry use-context install-metrics-server create-monitoring ## Create cluster and switch kubectl context
 
 stop-cluster: stop-docker-registry delete-cluster  ## Delete cluster and stop docker registry
 

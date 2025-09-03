@@ -8,8 +8,8 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-echo "[1/4] Deleting app namespace (if exists)..."
-kubectl delete namespace app --ignore-not-found=true
+echo "[1/4] Cleaning up application resources..."
+make -C "$ROOT_DIR" cleanup-all || true
 
 echo "[2/4] Stopping any lingering port-forward..."
 if [ -f /tmp/pf-app.pid ]; then
@@ -24,5 +24,3 @@ echo "[4/4] Stopping local docker registry..."
 make -C "$ROOT_DIR" stop-docker-registry || true
 
 echo "Teardown complete."
-
-
