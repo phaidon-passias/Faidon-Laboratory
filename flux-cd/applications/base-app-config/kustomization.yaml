@@ -3,11 +3,9 @@ kind: Kustomization
 
 metadata:
   name: base-app-config
-  namespace: app
 
 resources:
-  - namespace.yaml
-  - ../../../kubernetes_manifests/app.yaml  # This no longer has namespace conflicts
+  - ../../../kubernetes_manifests/app.yaml
 
 commonLabels:
   app.kubernetes.io/name: app
