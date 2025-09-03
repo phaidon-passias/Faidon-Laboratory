@@ -12,7 +12,7 @@ ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
 echo "🔄 [1/5] Suspending Flux reconciliation..."
 make -C "$ROOT_DIR" flux-suspend || true
 
-echo "🧹 [2/5] Cleaning up application resources..."
+echo "🧹 [2/5] Cleaning up application resources and Flux files..."
 make -C "$ROOT_DIR" cleanup-all || true
 
 echo "🛑 [3/5] Stopping any lingering port-forward..."

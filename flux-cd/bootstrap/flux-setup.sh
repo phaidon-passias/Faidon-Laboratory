@@ -108,7 +108,7 @@ else
     
     # Bootstrap FluxCD
     flux bootstrap git \
-        --url=https://github.com/$GITHUB_USER/$GITHUB_REPO \
+        --url=ssh://git@github.com/$GITHUB_USER/$GITHUB_REPO \
         --branch=$GITHUB_BRANCH \
         --path=flux-cd/bootstrap \
         --namespace=$FLUX_NAMESPACE \

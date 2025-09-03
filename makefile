@@ -68,7 +68,14 @@ cleanup-app: ## Clean up app namespace (manual fallback)
 	@$(KUBECTL) delete namespace app --ignore-not-found=true || true
 	@echo "App namespace cleaned up"
 
-cleanup-all: cleanup-app ## Clean up all application resources
+cleanup-flux-files: ## Clean up Flux-generated bootstrap files
+	@echo "🧹 Cleaning up Flux-generated bootstrap files..."
+	@rm -f flux-cd/bootstrap/flux-system/gotk-components.yaml
+	@rm -f flux-cd/bootstrap/flux-system/gotk-sync.yaml
+	@rm -f flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "✅ Flux bootstrap files cleaned up"
+
+cleanup-all: cleanup-app cleanup-flux-files ## Clean up all application resources
 	@echo "All application resources cleaned up"
 
 # ------------------------------
