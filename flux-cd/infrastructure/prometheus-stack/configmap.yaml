@@ -7,7 +7,7 @@ data:
   values.yaml: |
     prometheus:
       prometheusSpec:
-        retention: 7d
+        retention: 168h
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -53,7 +53,7 @@ data:
 
     alertmanager:
       alertmanagerSpec:
-        retention: 7d
+        retention: 168h
         storage:
           volumeClaimTemplate:
             spec:
