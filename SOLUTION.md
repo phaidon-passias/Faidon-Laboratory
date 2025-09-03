@@ -313,7 +313,7 @@ flux-cd/                                    # Root directory for all GitOps-mana
 │
 └── bootstrap/                              # FluxCD system configuration and bootstrap
     ├── flux-system/                       # FluxCD system namespace (created by bootstrap)
-    └── flux-setup.sh                      # FluxCD installation and bootstrap script
+    # FluxCD installation and bootstrap is now handled directly in setup-all.sh
 
 helm-charts/                                # Helm chart definitions (templating engine)
 └── app/                                   # Application Helm chart

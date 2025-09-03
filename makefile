@@ -18,7 +18,7 @@ HPA_CONCURRENCY ?= 200      # parallel clients
 HPA_PAUSE ?= 0.1    
 
 .DEFAULT_GOAL := help
-.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics setup-flux deploy-everything
+.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -158,12 +158,7 @@ wait-for-flux: ## Wait for Flux to be ready and synced
 	@timeout 300s bash -c 'until ./check-flux-ready.sh; do sleep 10; done' || true
 	@echo "🎉 Flux is fully synced and ready!"
 
-setup-flux: bootstrap-flux wait-for-flux ## Complete Flux setup: bootstrap and wait for readiness
-	@echo "🎉 Flux setup complete! Your cluster is now managed by GitOps."
-	@echo "📝 Next steps:"
-	@echo "   1. Build and push your app: make build-and-push-services"
-	@echo "   2. Deploy via Flux: make deploy-via-flux"
-	@echo "   3. Check status: make flux-status"
+
 
 deploy-via-flux: ## Deploy everything via Flux GitOps
 	@echo "🚀 Deploying everything via Flux GitOps..."
@@ -175,7 +170,7 @@ deploy-via-flux: ## Deploy everything via Flux GitOps
 	@echo "✅ Deployment triggered! Flux will now sync your cluster."
 	@echo "⏳ Check status with: make flux-status"
 
-deploy-everything: setup-flux build-and-push-services deploy-via-flux ## Complete workflow: setup Flux, build app, deploy
+deploy-everything: build-and-push-services deploy-via-flux ## Complete workflow: build app, deploy via Flux
 	@echo "🚀 Complete deployment workflow finished!"
 	@echo "⏳ Your cluster is now being managed by Flux GitOps."
 	@echo "📊 Monitor progress with: make flux-status"
@@ -303,8 +298,8 @@ install-metrics-server: ## Install metrics-server and patch flags for kind, then
 	@echo "Installing metrics-server..."
 	@$(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml | cat
 
-	@echo "Patching metrics-server flags for kind if missing..."
-	@if ! $(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-insecure-tls'; then \
+	@echo "
+	(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-insecure-tls'; then \
 	  $(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' | cat || true; \
 	fi
 	@if ! $(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-preferred-address-types'; then \
