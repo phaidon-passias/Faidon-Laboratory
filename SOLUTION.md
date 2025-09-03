@@ -76,3 +76,21 @@ TODO: Add building and pushing images to the CI pipeline in makefile
 TODO: Specify the LOAD AND VERIFICATION OF HPA SCALES
 TODO: Add "hey as a formula that i use for my setup for HPA"
 
+## PART3: Fixing a bug with the application- metrics related issue
+
+There was a logical issue with when reporting latency, previously it only recorded latency for failed requestes.
+I added some code to help with reporting also successfull request. Now all requested with contribute to latency metrics. If we were to scale based on latency metrics then we would face the issue that we would have incoherent data.
+If the problem statement behind the decision of reporting only the failed requests would be monitoring i'd suggest filter or drop a percentage of the successfull requests in your OTEL Collector. 
+I see a problem if I'd set an SLA based on percentiles on this metric. Also questions like "how much Load i can handle before the service is degrades are not answered.
+
+I'd revert if its a dev only application and i don't care about further analysis or if i have a storage issue (from our last interview Robert noted that the biggest "cost-issue" kaiko is facing is storage. I'd have to do an analysis on whether this service is critical enough)(on the other hand prometheus is very efficient in storage, i wouldn't consider it a problem)
+
+Theoretically it would skew our metrics because 
+`Current broken behavior`:
+Failed requests: Record latency ✅
+Successful requests: Don't record latency ❌
+Result: Our Prometheus histogram only would contain data from failed requests, which means:
+Average latency is artificially high (only failures, which might be slower)
+Percentiles are wrong (P50, P95, P99 based on incomplete data)
+HPA decisions could be wrong if you're scaling on latency metrics
+Monitoring dashboards show misleading performance data

@@ -28,15 +28,19 @@ def readyz():
 @app.route("/work")
 def work():
     t0 = time.time()
-    # simulate variable latency
-    time.sleep(random.uniform(0.05, 0.2))
-    if random.random() < FAIL_RATE:
-        LAT.labels("/work","GET").observe(time.time() - t0)
-        REQS.labels("GET","/work","500").inc()
-        return jsonify({"ok": False}), 500
-    LAT.labels("/work","GET").observe(time.time() - t0)
-    REQS.labels("GET","/work","200").inc()
-    return jsonify({"ok": True, "greeting": GREETING}), 200
+    try:
+        # Simulate variable latency
+        time.sleep(random.uniform(0.05, 0.2))
+        
+        if random.random() < FAIL_RATE:
+            REQS.labels("GET", "/work", "500").inc()
+            return jsonify({"ok": False, "error": "simulated failure"}), 500
+        
+        REQS.labels("GET", "/work", "200").inc()
+        return jsonify({"ok": True, "greeting": GREETING}), 200
+    finally:
+        # Always record latency regardless of success/failure
+        LAT.labels("/work", "GET").observe(time.time() - t0)
 
 @app.route("/metrics")
 def metrics():
