@@ -158,8 +158,6 @@ wait-for-flux: ## Wait for Flux to be ready and synced
 	@timeout 300s bash -c 'until ./check-flux-ready.sh; do sleep 10; done' || true
 	@echo "🎉 Flux is fully synced and ready!"
 
-
-
 deploy-via-flux: ## Deploy everything via Flux GitOps
 	@echo "🚀 Deploying everything via Flux GitOps..."
 	@echo "📝 Committing current state to trigger Flux deployment..."
