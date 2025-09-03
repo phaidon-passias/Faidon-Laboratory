@@ -73,6 +73,14 @@ cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@rm -f flux-cd/bootstrap/flux-system/gotk-components.yaml
 	@rm -f flux-cd/bootstrap/flux-system/gotk-sync.yaml
 	@rm -f flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "🧹 Creating minimal namespace file..."
+	@echo "apiVersion: v1" > flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "kind: Namespace" >> flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "metadata:" >> flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "  name: flux-system" >> flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "  labels:" >> flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "    app.kubernetes.io/name: flux-system" >> flux-cd/bootstrap/flux-system/namespace.yaml
+	@echo "    app.kubernetes.io/part-of: kaiko-assignment" >> flux-cd/bootstrap/flux-system/namespace.yaml
 	@echo "🧹 Cleaning up kustomization file content..."
 	@echo "apiVersion: kustomize.config.k8s.io/v1beta1" > flux-cd/bootstrap/flux-system/kustomization.yaml
 	@echo "kind: Kustomization" >> flux-cd/bootstrap/flux-system/kustomization.yaml
@@ -82,7 +90,9 @@ cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@echo "  namespace: flux-system" >> flux-cd/bootstrap/flux-system/kustomization.yaml
 	@echo "" >> flux-cd/bootstrap/flux-system/kustomization.yaml
 	@echo "resources:" >> flux-cd/bootstrap/flux-system/kustomization.yaml
-	@echo "  # Resources will be added by Flux during bootstrap" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "  # This file will be populated by Flux during bootstrap" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "  # For now, we include a minimal namespace to ensure Flux can bootstrap" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "  - namespace.yaml" >> flux-cd/bootstrap/flux-system/kustomization.yaml
 	@echo "✅ Flux bootstrap files cleaned up, kustomization structure preserved"
 	@echo "📝 Committing cleanup to git..."
 	@git add flux-cd/bootstrap/flux-system/ || true
