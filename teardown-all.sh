@@ -13,6 +13,7 @@ echo "🔄 [1/5] Suspending Flux reconciliation..."
 make -C "$ROOT_DIR" flux-suspend || true
 
 echo "🧹 [2/5] Cleaning up application resources and Flux files..."
+echo "   This will also commit and push the cleanup to main..."
 make -C "$ROOT_DIR" cleanup-all || true
 
 echo "🛑 [3/5] Stopping any lingering port-forward..."

@@ -74,6 +74,12 @@ cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@rm -f flux-cd/bootstrap/flux-system/gotk-sync.yaml
 	@rm -f flux-cd/bootstrap/flux-system/namespace.yaml
 	@echo "✅ Flux bootstrap files cleaned up"
+	@echo "📝 Committing cleanup to git..."
+	@git add flux-cd/bootstrap/flux-system/ || true
+	@git commit -m "Clean up Flux-generated bootstrap files" || true
+	@echo "📤 Pushing cleanup to main..."
+	@git push origin main || true
+	@echo "🎉 Cleanup committed and pushed to main!"
 
 cleanup-all: cleanup-app cleanup-flux-files ## Clean up all application resources
 	@echo "All application resources cleaned up"
