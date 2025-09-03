@@ -6,6 +6,4 @@ metadata:
   namespace: flux-system
 
 resources:
-  - gotk-components.yaml
-  - gotk-sync.yaml
-  - namespace.yaml
+  # Resources will be added by Flux during bootstrap
