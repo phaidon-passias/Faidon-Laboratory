@@ -3,61 +3,21 @@ kind: Kustomization
 
 metadata:
   name: staging-environment
-  namespace: staging
+
+namespace: staging
 
 resources:
   - namespace.yaml
   - ../../base-app-config
 
-commonLabels:
-  app.kubernetes.io/part-of: kaiko-assignment
-  app.kubernetes.io/environment: staging
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: kaiko-assignment
+      app.kubernetes.io/environment: staging
+      app.kubernetes.io/tier: staging
 
-# Namespace transformation patches
+# Resource allocation patches
 patches:
-  - target:
-      kind: Deployment
-      name: app
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: staging
-  - target:
-      kind: Service
-      name: app
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: staging
-  - target:
-      kind: ConfigMap
-      name: app-config
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: staging
-  - target:
-      kind: Secret
-      name: app-secret
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: staging
-  - target:
-      kind: ServiceAccount
-      name: app-sa
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: staging
-  - target:
-      kind: NetworkPolicy
-      name: app-network-policy
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: staging
-  # Resource allocation patches
   - target:
       kind: Deployment
       name: app

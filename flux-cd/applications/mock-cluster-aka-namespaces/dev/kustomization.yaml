@@ -10,9 +10,11 @@ resources:
   - namespace.yaml
   - ../../base-app-config
 
-commonLabels:
-  app.kubernetes.io/part-of: kaiko-assignment
-  app.kubernetes.io/environment: development
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: kaiko-assignment
+      app.kubernetes.io/environment: development
+      app.kubernetes.io/tier: development
 
 # Resource allocation patches
 patches:

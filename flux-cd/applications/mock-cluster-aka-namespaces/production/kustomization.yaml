@@ -3,61 +3,21 @@ kind: Kustomization
 
 metadata:
   name: production-environment
-  namespace: production
+
+namespace: production
 
 resources:
   - namespace.yaml
   - ../../base-app-config
 
-commonLabels:
-  app.kubernetes.io/part-of: kaiko-assignment
-  app.kubernetes.io/environment: production
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: kaiko-assignment
+      app.kubernetes.io/environment: production
+      app.kubernetes.io/tier: production
 
-# Namespace transformation patches
+# Resource allocation patches
 patches:
-  - target:
-      kind: Deployment
-      name: app
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: production
-  - target:
-      kind: Service
-      name: app
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: production
-  - target:
-      kind: ConfigMap
-      name: app-config
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: production
-  - target:
-      kind: Secret
-      name: app-secret
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: production
-  - target:
-      kind: ServiceAccount
-      name: app-sa
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: production
-  - target:
-      kind: NetworkPolicy
-      name: app-network-policy
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: production
-  # Resource allocation patches
   - target:
       kind: Deployment
       name: app
@@ -67,7 +27,7 @@ patches:
         value: 3
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/cpu
-        value: 250m
+        value: 200m
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/memory
         value: 256Mi
