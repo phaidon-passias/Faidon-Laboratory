@@ -6,4 +6,6 @@ metadata:
   namespace: flux-system
 
 resources:
-  # Resources will be added by Flux during bootstrap
+  # This file will be populated by Flux during bootstrap
+  # For now, we include a minimal namespace to ensure Flux can bootstrap
+  - namespace.yaml
