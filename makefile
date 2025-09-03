@@ -18,7 +18,7 @@ HPA_CONCURRENCY ?= 200      # parallel clients
 HPA_PAUSE ?= 0.1    
 
 .DEFAULT_GOAL := help
-.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters install-monitoring hpa-load hpa-watch install-metrics
+.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics setup-flux deploy-everything
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -55,27 +55,21 @@ debug-app: ## Debug container in app namespace
 debug-monitoring: ## Debug container in monitoring namespace
 	@$(KUBECTL) run -n monitoring debug-toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
 
-create-monitoring: ## Create monitoring namespace and resources
-	@echo "Creating monitoring namespace and resources..."
-	@$(KUBECTL) apply -f kubernetes_manifests/monitoring.yaml
-	@echo "Monitoring namespace created successfully" 
+ 
 
 delete-cluster: check-deps ## Delete the kind cluster and delete port forwards
 	@$(KIND) delete cluster --name $(CLUSTER_NAME)
 	lsof -iTCP -sTCP:LISTEN -n -P
 
-cleanup-monitoring: ## Clean up monitoring namespace
-	@echo "Cleaning up monitoring namespace..."
-	@$(KUBECTL) delete -f kubernetes_manifests/monitoring.yaml --ignore-not-found=true || true
-	@echo "Monitoring namespace cleaned up"
-
-cleanup-app: ## Clean up app namespace
-	@echo "Cleaning up app namespace..."
-	@$(KUBECTL) delete -f kubernetes_manifests/app.yaml --ignore-not-found=true || true
+cleanup-app: ## Clean up app namespace (manual fallback)
+	@echo "Cleaning up app namespace manually..."
+	@echo "⚠️  Note: This only cleans up manually created resources."
+	@echo "   Flux-managed resources should be removed via GitOps."
+	@$(KUBECTL) delete namespace app --ignore-not-found=true || true
 	@echo "App namespace cleaned up"
 
-cleanup-all: cleanup-app cleanup-monitoring ## Clean up all application resources
-	@echo "All application resources cleaed up"
+cleanup-all: cleanup-app ## Clean up all application resources
+	@echo "All application resources cleaned up"
 
 # ------------------------------
 # FluxCD GitOps Management
@@ -98,20 +92,20 @@ bootstrap-flux: ## Bootstrap FluxCD to the cluster
 		exit 1; \
 	fi
 	@flux bootstrap git \
-		--url=https://github.com/$(GITHUB_USER)/$(GITHUB_REPO) \
+		--url=ssh://git@github.com/$(GITHUB_USER)/$(GITHUB_REPO) \
 		--branch=main \
 		--path=flux-cd/bootstrap \
 		--namespace=flux-system \
 		--components-extra=image-reflector-controller,image-automation-controller
 
 flux-status: ## Check FluxCD status
-	@echo "FluxCD Git Repository Status:"
+	@echo "📊 FluxCD Git Repository Status:"
 	@flux get sources git
 	@echo ""
-	@echo "FluxCD Kustomizations:"
+	@echo "📋 FluxCD Kustomizations:"
 	@flux get kustomizations
 	@echo ""
-	@echo "FluxCD Helm Releases:"
+	@echo "📦 FluxCD Helm Releases:"
 	@flux get helmreleases
 
 flux-logs: ## Follow FluxCD logs
@@ -123,24 +117,77 @@ flux-suspend: ## Suspend FluxCD reconciliation
 	@flux suspend kustomization --all
 
 flux-resume: ## Resume FluxCD reconciliation
-	@echo "Resuming FluxCD reconciliation..."
+	@echo "🔄 Resuming FluxCD reconciliation..."
 	@flux resume kustomization --all
+
+# ------------------------------
+# Complete Flux Workflow
+# ------------------------------
+
+wait-for-flux: ## Wait for Flux to be ready and synced
+	@echo "⏳ Waiting for Flux to be ready..."
+	@echo "🔍 Checking if Flux is running..."
+	@kubectl wait --for=condition=Ready --timeout=300s -n flux-system pod -l app.kubernetes.io/name=flux || true
+	@echo "✅ Flux is ready!"
+	@echo "🔄 Waiting for initial sync to complete..."
+	@echo "⏳ This may take a few minutes for the first sync..."
+	@timeout 300s bash -c 'until ./check-flux-ready.sh; do sleep 10; done' || true
+	@echo "🎉 Flux is fully synced and ready!"
+
+setup-flux: bootstrap-flux wait-for-flux ## Complete Flux setup: bootstrap and wait for readiness
+	@echo "🎉 Flux setup complete! Your cluster is now managed by GitOps."
+	@echo "📝 Next steps:"
+	@echo "   1. Build and push your app: make build-and-push-services"
+	@echo "   2. Deploy via Flux: make deploy-via-flux"
+	@echo "   3. Check status: make flux-status"
+
+deploy-via-flux: ## Deploy everything via Flux GitOps
+	@echo "🚀 Deploying everything via Flux GitOps..."
+	@echo "📝 Committing current state to trigger Flux deployment..."
+	@git add . || true
+	@git commit -m "Auto-deploy via Flux $(shell date +%Y%m%d-%H%M%S)" || true
+	@echo "📤 Pushing to main branch to trigger Flux..."
+	@git push origin main || true
+	@echo "✅ Deployment triggered! Flux will now sync your cluster."
+	@echo "⏳ Check status with: make flux-status"
+
+deploy-everything: setup-flux build-and-push-services deploy-via-flux ## Complete workflow: setup Flux, build app, deploy
+	@echo "🚀 Complete deployment workflow finished!"
+	@echo "⏳ Your cluster is now being managed by Flux GitOps."
+	@echo "📊 Monitor progress with: make flux-status"
+
+cluster-status: ## Check overall cluster and Flux status
+	@echo "🔍 Cluster Status:"
+	@echo "=================="
+	@kubectl cluster-info --context kind-kaiko-lab 2>/dev/null || echo "❌ Not connected to kaiko-lab cluster"
+	@echo ""
+	@echo "📊 Flux Status:"
+	@echo "==============="
+	@if kubectl get namespace flux-system >/dev/null 2>&1; then \
+		./check-flux-ready.sh 2>/dev/null && echo "✅ Flux is healthy" || echo "❌ Flux has issues"; \
+	else \
+		echo "❌ Flux not installed"; \
+	fi
+	@echo ""
+	@echo "🚀 Application Status:"
+	@echo "======================"
+	@kubectl get pods -A --no-headers | grep -v "kube-system\|local-path-storage" | head -10 || echo "No application pods found"
 
 # ------------------------------
 # Environment Management
 # ------------------------------
 
-deploy-dev: ## Deploy dev environment via GitOps
-	@echo "Deploying dev environment..."
-	@kubectl apply -k apps/mock-cluster-aka-namespaces/dev
+deploy-dev: ## Deploy dev environment via GitOps (legacy - use deploy-via-flux)
+	@echo "⚠️  This target is deprecated. Use 'make deploy-via-flux' instead."
+	@echo "   Flux will automatically deploy all environments from your repo."
 
-deploy-staging: ## Deploy staging environment via GitOps
-	@echo "Deploying staging environment..."
-	@kubectl apply -k apps/mock-cluster-aka-namespaces/staging
+deploy-staging: ## Deploy staging environment via GitOps (legacy - use deploy-via-flux)
+	@echo "⚠️  This target is deprecated. Use 'make deploy-via-flux' instead."
+	@echo "   Flux will automatically deploy all environments from your repo."
 
-deploy-production: ## Deploy production environment via GitOps
-	@echo "Deploying production environment..."
-	@kubectl apply -k apps/mock-cluster-aka-namespaces/production
+deploy-production: ## Deploy production environment via GitOps (legacy - use deploy-via-flux)
+	@echo "⚠️  This target is deprecated. Use 'make deploy-via-flux' instead."
+	@echo "   Flux will automatically deploy all environments from your repo."
 
 # ------------------------------
 # Configuration
@@ -153,7 +200,7 @@ GITHUB_REPO ?= kaiko-assignment
 use-context: check-deps ## Switch kubectl context to this cluster
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)
 
-start-cluster: create-cluster start-docker-registry use-context install-metrics-server create-monitoring ## Create cluster and switch kubectl context
+start-cluster: create-cluster start-docker-registry use-context install-metrics-server ## Create cluster and switch kubectl context
 
 stop-cluster: stop-docker-registry delete-cluster  ## Delete cluster and stop docker registry
 
