@@ -1,6 +1,6 @@
 # Solution
 
-## Files provided
+## Files provided (an explanation of the scripts and their functionality is at the bottom)
 
 `makefile`: A makefile to help with the creation/deletion of the cluster, deployment of app, deploying of monitoring (opentelemetry), gitops(prefered tool is fluxCD)
 
@@ -14,45 +14,6 @@
 
 `debug-metrics-simple.sh`: Create a debug pod in the monitoring namespace and query app metrics using make targets. Cross namespace communication and accessibility while network policies allow namespace isolation
 
-
-## How to run (scripts)
-
-### 1) Setup everything
-
-```bash
-chmod +x setup-all.sh teardown-all.sh hpa-demo.sh
-./setup-all.sh
-```
-
-What it does:
-- Creates kind cluster + local registry, installs metrics-server
-- Builds and pushes the app image to `localhost:5000`
-- Applies manifests and waits for rollout
-
-If you see a message about port 5000 being in use, it means a registry (or AirPlay on macOS) already binds that port. Either stop it or skip starting another registry.
-
-### 2) Drive HPA scaling and observe
-
-Start load and 60s monitoring snapshots:
-```bash
-HPA_CONCURRENCY=200 HPA_DURATION=60 ./hpa-demo.sh run
-```
-
-Alternatively, live watch:
-```bash
-./hpa-demo.sh watch
-```
-
-### 3) Teardown everything
-
-```bash
-./teardown-all.sh
-```
-
-What it does:
-- Deletes the `app` namespace and resources
-- Stops any lingering port-forward
-- Deletes the kind cluster and stops the local registry
 
 ## Part 1 – Kubernetes and Application setup:
 
@@ -174,4 +135,134 @@ Monitoring dashboards show misleading performance data
 - [ ] Implement Kustomize and fluxcd and maybe helm charts
 - [ ] Implement grafana prometheus  
 - [ ] Pull metrics in prometheus and use otel collector
+
+## Scripts and Automation
+
+### Core Setup and Teardown Scripts
+
+**`setup-all.sh`** - Complete environment setup
+- Creates Kind cluster with local registry
+- Installs metrics-server for HPA functionality
+- Builds and pushes app Docker image to localhost:5000
+- Applies all Kubernetes manifests (app + monitoring namespaces)
+- Waits for application rollout completion
+- Verifies all resources are running
+
+**`teardown-all.sh`** - Complete environment cleanup
+- Cleans up all application resources using Makefile targets
+- Stops any lingering port-forward connections
+- Deletes the entire Kind cluster
+- Stops local Docker registry
+
+### HPA Testing and Monitoring Scripts
+
+**`hpa-demo.sh`** - HPA load testing and observation
+- **`./hpa-demo.sh run`** - Generates load and captures 60s monitoring snapshots
+- **`./hpa-demo.sh watch`** - Live monitoring of HPA scaling events
+- **`./hpa-demo.sh stop`** - Stops any running port-forward connections
+- Configurable concurrency (default: 200) and duration (default: 120s)
+- Uses `hey` tool if available, falls back to curl for load generation
+
+### Debug and Troubleshooting Scripts
+
+**`debug-metrics-simple.sh`** - Cross-namespace metrics testing
+- Creates debug pod in monitoring namespace using `nicolaka/netshoot` image
+- Tests connectivity from monitoring → app namespace
+- Validates metrics endpoint accessibility (`/metrics`)
+- Shows metrics summary and HTTP request statistics
+- **Smart pod reuse**: Reuses existing debug pod if available
+- **Network policy validation**: Demonstrates proper cross-namespace communication
+
+### Makefile Targets
+
+**Cluster Management:**
+- `make start-cluster` - Creates cluster, registry, metrics-server, and monitoring namespace
+- `make stop-cluster` - Stops registry and deletes cluster
+- `make create-monitoring` - Creates monitoring namespace with proper RBAC and network policies
+- `make cleanup-monitoring` - Removes monitoring namespace and resources
+
+**Application Management:**
+- `make build-and-push-services` - Builds and pushes app Docker image
+- `make cleanup-app` - Removes app namespace and resources
+- `make cleanup-all` - Removes both app and monitoring resources
+
+**Debug and Testing:**
+- `make debug-container` - Debug pod in default namespace
+- `make debug-app` - Debug pod in app namespace
+- `make debug-monitoring` - Debug pod in monitoring namespace
+- `make hpa-load` - Port-forward and generate load for HPA testing
+- `make hpa-watch` - Watch HPA scaling events in real-time
+
+**HPA Testing:**
+- `make hpa-load` - Generates configurable load (HPA_CONCURRENCY, HPA_DURATION)
+- `make hpa-watch` - Real-time HPA monitoring
+- `make hpa-stop` - Cleanup port-forward connections
+
+### Script Features and Capabilities
+
+**Cross-Namespace Testing:**
+- Monitoring namespace can access app metrics endpoint
+- Proper network policy enforcement
+- DNS resolution working across namespaces
+- Service discovery functioning correctly
+
+**Load Testing:**
+- Configurable concurrency and duration
+- Automatic port-forward management
+- Graceful cleanup on script exit
+- Fallback load generation methods
+
+**Debugging:**
+- Interactive debug pod access
+- Network connectivity testing
+- Metrics endpoint validation
+- Service health checks
+
+**Resource Management:**
+- Automatic cleanup of temporary resources
+- Pod reuse for efficiency
+- Proper error handling and status reporting
+- Resource quota and limit enforcement
+
+### Usage Examples
+
+```bash
+# Complete setup
+./setup-all.sh
+
+# Test metrics endpoint from monitoring namespace
+./debug-metrics-simple.sh
+
+# Generate load and test HPA
+HPA_CONCURRENCY=300 HPA_DURATION=180 ./hpa-demo.sh run
+
+# Watch HPA scaling
+./hpa-demo.sh watch
+
+# Cleanup everything
+./teardown-all.sh
+
+# Or use Makefile targets
+make start-cluster
+make debug-monitoring
+make hpa-load
+make cleanup-all
+```
+
+### Script Dependencies
+
+- **kubectl** - Kubernetes cluster management
+- **kind** - Local cluster creation
+- **docker** - Image building and registry
+- **hey** (optional) - Load testing tool
+- **curl** - HTTP requests and fallback load generation
+- **make** - Build automation and target management
+
+### Network Architecture
+
+The scripts demonstrate a proper multi-namespace setup:
+- **App Namespace**: Application pods, services, and network policies
+- **Monitoring Namespace**: Debug tools, monitoring resources, and cross-namespace access
+- **Network Policies**: Default-deny with explicit allow rules for monitoring → app communication
+- **Service Discovery**: DNS resolution working across namespace boundaries
 
