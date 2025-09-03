@@ -28,9 +28,9 @@ EOF
 monitor_loop() {
   for _ in {1..12}; do
     echo "--- $(date) ---"
-    kubectl -n app get hpa | cat || true
-    kubectl -n app get deploy/app | cat || true
-    kubectl -n app get pods | cat || true
+    kubectl -n dev get hpa | cat || true
+    kubectl -n dev get deploy/app | cat || true
+    kubectl -n dev get pods | cat || true
     sleep 5
   done
 }

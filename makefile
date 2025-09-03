@@ -18,14 +18,15 @@ HPA_CONCURRENCY ?= 200      # parallel clients
 HPA_PAUSE ?= 0.1    
 
 .DEFAULT_GOAL := help
-.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything
+.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything install-tools check-versions
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 check-deps: ## Verify required CLI tools are installed
-	@command -v $(KIND) >/dev/null 2>&1 || { echo "ERROR: kind not found. Install from https://kind.sigs.k8s.io/"; exit 1; }
-	@command -v $(KUBECTL) >/dev/null 2>&1 || { echo "ERROR: kubectl not found. Install kubectl first."; exit 1; }
+	@command -v $(KIND) >/dev/null 2>&1 || { echo "ERROR: kind not found. Run 'make install-tools' to install"; exit 1; }
+	@command -v $(KUBECTL) >/dev/null 2>&1 || { echo "ERROR: kubectl not found. Run 'make install-tools' to install"; exit 1; }
+	@command -v docker >/dev/null 2>&1 || { echo "ERROR: docker not found. Install Docker Desktop first"; exit 1; }
 	@PORT=5000; \
 	if lsof -iTCP:$${PORT} -sTCP:LISTEN -n -P >/dev/null 2>&1; then \
 	  echo "ERROR: Port $${PORT} is already in use on the host."; \
@@ -49,8 +50,8 @@ create-cluster: check-deps ## Create kind cluster if missing, set context, insta
 debug-container:
 	@$(KUBECTL) run -n default toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
 
-debug-app: ## Debug container in app namespace
-	@$(KUBECTL) run -n app debug-toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
+debug-app: ## Debug container in dev namespace
+	@$(KUBECTL) run -n dev debug-toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
 
 debug-monitoring: ## Debug container in monitoring namespace
 	@$(KUBECTL) run -n monitoring debug-toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
@@ -61,12 +62,12 @@ delete-cluster: check-deps ## Delete the kind cluster and delete port forwards
 	@$(KIND) delete cluster --name $(CLUSTER_NAME)
 	lsof -iTCP -sTCP:LISTEN -n -P
 
-cleanup-app: ## Clean up app namespace (manual fallback)
-	@echo "Cleaning up app namespace manually..."
+cleanup-app: ## Clean up dev namespace (manual fallback)
+	@echo "Cleaning up dev namespace manually..."
 	@echo "⚠️  Note: This only cleans up manually created resources."
 	@echo "   Flux-managed resources should be removed via GitOps."
-	@$(KUBECTL) delete namespace app --ignore-not-found=true || true
-	@echo "App namespace cleaned up"
+	@$(KUBECTL) delete namespace dev --ignore-not-found=true || true
+	@echo "Dev namespace cleaned up"
 
 cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@echo "🧹 Cleaning up Flux-generated bootstrap files..."
@@ -99,7 +100,83 @@ cleanup-all: cleanup-app cleanup-flux-files ## Clean up all application resource
 # FluxCD GitOps Management
 # ------------------------------
 
-install-flux-cli: ## Install FluxCD CLI
+install-tools: ## Install all required tools (Flux, Kind, kubectl, etc.)
+	@echo "🔧 Installing required tools..."
+	@echo ""
+	@echo "📦 Checking and installing kubectl..."
+	@if ! command -v kubectl >/dev/null 2>&1; then \
+		if command -v brew >/dev/null 2>&1; then \
+			brew install kubectl; \
+		else \
+			echo "Homebrew not found. Please install kubectl manually:"; \
+			echo "  curl -LO https://dl.k8s.io/release/v1.28.0/bin/darwin/amd64/kubectl"; \
+			echo "  chmod +x kubectl && sudo mv kubectl /usr/local/bin/"; \
+			exit 1; \
+		fi \
+	else \
+		echo "✅ kubectl already installed"; \
+	fi
+	@echo ""
+	@echo "🐳 Checking and installing Kind..."
+	@if ! command -v kind >/dev/null 2>&1; then \
+		if command -v brew >/dev/null 2>&1; then \
+			brew install kind; \
+		else \
+			echo "Homebrew not found. Please install Kind manually:"; \
+			echo "  curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-darwin-amd64"; \
+			echo "  chmod +x ./kind && sudo mv ./kind /usr/local/bin/"; \
+			exit 1; \
+		fi \
+	else \
+		echo "✅ Kind already installed"; \
+	fi
+	@echo ""
+	@echo "📊 Checking and installing FluxCD CLI..."
+	@if ! command -v flux >/dev/null 2>&1; then \
+		if command -v brew >/dev/null 2>&1; then \
+			brew install fluxcd/tap/flux; \
+		else \
+			echo "Homebrew not found. Please install FluxCD CLI manually:"; \
+			echo "  curl -s https://fluxcd.io/install.sh | sudo bash"; \
+			exit 1; \
+		fi \
+	else \
+		echo "✅ FluxCD CLI already installed"; \
+	fi
+	@echo ""
+	@echo "🚀 Checking and installing hey (load testing tool)..."
+	@if ! command -v hey >/dev/null 2>&1; then \
+		if command -v brew >/dev/null 2>&1; then \
+			brew install hey; \
+		else \
+			echo "Homebrew not found. Please install hey manually:"; \
+			echo "  go install github.com/rakyll/hey@latest"; \
+			echo "  or download from: https://github.com/rakyll/hey/releases"; \
+		fi \
+	else \
+		echo "✅ hey already installed"; \
+	fi
+	@echo ""
+	@echo "🎯 Checking Docker..."
+	@if ! command -v docker >/dev/null 2>&1; then \
+		echo "❌ Docker not found. Please install Docker Desktop:"; \
+		echo "  https://www.docker.com/products/docker-desktop/"; \
+		exit 1; \
+	else \
+		echo "✅ Docker already installed"; \
+	fi
+	@echo ""
+	@echo "🎉 All required tools are ready!"
+
+check-versions: ## Check versions of installed tools
+	@echo "📋 Tool versions:"
+	@echo "kubectl: $(shell kubectl version --client --short 2>/dev/null | head -1 || echo "not available")"
+	@echo "kind: $(shell kind version 2>/dev/null || echo "not available")"
+	@echo "flux: $(shell flux version 2>/dev/null | head -1 || echo "not available")"
+	@echo "hey: $(shell hey version 2>/dev/null | head -1 || echo "not available")"
+	@echo "docker: $(shell docker version --format "{{.Version}}" 2>/dev/null | head -1 || echo "not available")"
+
+install-flux-cli: ## Install FluxCD CLI (legacy target - use install-tools instead)
 	@echo "Installing FluxCD CLI..."
 	@if command -v brew >/dev/null 2>&1; then \
 		brew install fluxcd/tap/flux; \
@@ -258,7 +335,7 @@ list-clusters: check-deps ## List existing kind clusters
 hpa-load: ## Port-forward svc/app and generate load (hey if available; robust cleanup)
 	@set -e; \
 	echo "Starting port-forward to svc/app on :8080..."; \
-	kubectl -n app port-forward svc/app 8080:80 >/tmp/pf-app.log 2>&1 & echo $$! > /tmp/pf-app.pid; \
+	kubectl -n dev port-forward svc/app 8080:80 >/tmp/pf-app.log 2>&1 & echo $$! > /tmp/pf-app.pid; \
 	cleanup() { kill $$(cat /tmp/pf-app.pid) >/dev/null 2>&1 || true; rm -f /tmp/pf-app.pid; }; \
 	trap cleanup EXIT INT TERM; \
 	echo "Waiting for app readiness on /healthz..."; \
@@ -282,7 +359,7 @@ hpa-load: ## Port-forward svc/app and generate load (hey if available; robust cl
 
 hpa-watch: ## Watch HPA and deployment scaling
 	@echo "Watching HPA (Ctrl-C to stop)"
-	@$(KUBECTL) get hpa -n app -w
+	@$(KUBECTL) get hpa -n dev -w
 
 hpa-stop: ## Stop port-forward (if left running)
 	@kill $$(cat /tmp/pf-app.pid) >/dev/null 2>&1 || true
