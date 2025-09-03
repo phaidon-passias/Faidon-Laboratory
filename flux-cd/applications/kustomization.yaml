@@ -7,5 +7,4 @@ metadata:
   name: applications
   namespace: flux-system
 resources:
-  - base-app-config/
   - mock-cluster-aka-namespaces/

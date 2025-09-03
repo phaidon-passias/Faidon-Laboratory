@@ -26,3 +26,6 @@ labels:
       app.kubernetes.io/version: v1.0.0
       app.kubernetes.io/component: application
       app.kubernetes.io/managed-by: flux
+
+# This base config will be transformed by environment-specific kustomizations
+# to set the appropriate namespace and resource allocations
