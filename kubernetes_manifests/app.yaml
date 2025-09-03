@@ -2,25 +2,74 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: app
-
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 ---
 
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: "200m"
+      memory: "256Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: app-quota
+  namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "1Gi"
+    limits.cpu: "2"
+    limits.memory: "2Gi"
+    pods: "10"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: app
+      app.kubernetes.io/name: app
+      app.kubernetes.io/part-of: kaiko-assignment
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  revisionHistoryLimit: 5
   template:
     metadata:
       labels:
-        app: app
+        app.kubernetes.io/name: app
+        app.kubernetes.io/part-of: kaiko-assignment
     spec:
-      serviceAccountName: app-sa
+      terminationGracePeriodSeconds: 30
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -28,6 +77,24 @@ spec:
             - matchExpressions:
               - key: node-role.kubernetes.io/control-plane
                 operator: DoesNotExist
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: app
+                  app.kubernetes.io/part-of: kaiko-assignment
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: app
+            app.kubernetes.io/part-of: kaiko-assignment
+      serviceAccountName: app-sa
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -57,16 +124,24 @@ spec:
                 configMapKeyRef:
                   name: app-config
                   key: READINESS_DELAY_SEC
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            failureThreshold: 10
+            periodSeconds: 1
           readinessProbe:
             httpGet:
               path: /readyz
               port: 8000
+            initialDelaySeconds: 2
             periodSeconds: 2
             timeoutSeconds: 1
           livenessProbe:
             httpGet:
               path: /healthz
               port: 8000
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 1
           resources:
@@ -102,9 +177,13 @@ kind: Service
 metadata:
   name: app
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 spec:
   selector:
-    app: app
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
   ports:
     - port: 80
       targetPort: http
@@ -116,6 +195,9 @@ kind: ConfigMap
 metadata:
   name: app-config
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 data:
   FAIL_RATE: "0.02"
   READINESS_DELAY_SEC: "10"
@@ -127,6 +209,9 @@ kind: Secret
 metadata:
   name: app-secret
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 type: Opaque
 stringData:
   GREETING: "hello"
@@ -138,11 +223,15 @@ kind: PodDisruptionBudget
 metadata:
   name: app-pdb
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 spec:
   minAvailable: 50%
   selector:
     matchLabels:
-      app: app
+      app.kubernetes.io/name: app
+      app.kubernetes.io/part-of: kaiko-assignment
 
 ---
 
@@ -151,6 +240,9 @@ kind: NetworkPolicy
 metadata:
   name: default-deny-all
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 spec:
   podSelector: {}
   policyTypes:
@@ -164,42 +256,78 @@ kind: NetworkPolicy
 metadata:
   name: allow-from-same-namespace
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 spec:
   podSelector:
     matchLabels:
-      app: app
+      app.kubernetes.io/name: app
+      app.kubernetes.io/part-of: kaiko-assignment
   policyTypes:
     - Ingress
   ingress:
     - from:
         - podSelector: {}
 
+# ---
+
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-from-prometheus-namespace
+#   namespace: app
+#   labels:
+#     app.kubernetes.io/name: app
+#     app.kubernetes.io/part-of: kaiko-assignment
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app.kubernetes.io/name: app
+#       app.kubernetes.io/part-of: kaiko-assignment
+#   policyTypes:
+#     - Ingress
+#   ingress:
+#     - from:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: monitoring
+
 ---
 
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-from-prometheus-namespace
+  name: allow-dns-egress
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 spec:
-  podSelector:
-    matchLabels:
-      app: app
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: monitoring
-
----
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
 
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: app
   namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -214,6 +342,12 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70
+  - type: Resource
+  resource:
+    name: memory
+    target:
+      type: Utilization
+      averageUtilization: 75
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
