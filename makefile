@@ -73,7 +73,17 @@ cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@rm -f flux-cd/bootstrap/flux-system/gotk-components.yaml
 	@rm -f flux-cd/bootstrap/flux-system/gotk-sync.yaml
 	@rm -f flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "✅ Flux bootstrap files cleaned up"
+	@echo "🧹 Cleaning up kustomization file content..."
+	@echo "apiVersion: kustomize.config.k8s.io/v1beta1" > flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "kind: Kustomization" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "metadata:" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "  name: flux-system" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "  namespace: flux-system" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "resources:" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "  # Resources will be added by Flux during bootstrap" >> flux-cd/bootstrap/flux-system/kustomization.yaml
+	@echo "✅ Flux bootstrap files cleaned up, kustomization structure preserved"
 	@echo "📝 Committing cleanup to git..."
 	@git add flux-cd/bootstrap/flux-system/ || true
 	@git commit -m "Clean up Flux-generated bootstrap files" || true
