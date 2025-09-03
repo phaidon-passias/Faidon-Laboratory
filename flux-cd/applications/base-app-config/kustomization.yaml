@@ -5,7 +5,19 @@ metadata:
   name: base-app-config
 
 resources:
-  - ../../../kubernetes_manifests/app.yaml
+  - deployment.yaml
+  - serviceaccount.yaml
+  - service.yaml
+  - configmap.yaml
+  - secret.yaml
+  - poddisruptionbudget.yaml
+  - networkpolicy-1.yaml
+  - networkpolicy-2.yaml
+  - networkpolicy-3.yaml
+  - networkpolicy-4.yaml
+  - horizontalpodautoscaler.yaml
+  - role.yaml
+  - rolebinding.yaml
 
 commonLabels:
   app.kubernetes.io/name: app

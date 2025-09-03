@@ -7,8 +7,73 @@ metadata:
 
 resources:
   - namespace.yaml
-  - app
+  - ../../base-app-config
 
 commonLabels:
   app.kubernetes.io/part-of: kaiko-assignment
   app.kubernetes.io/environment: staging
+
+# Namespace transformation patches
+patches:
+  - target:
+      kind: Deployment
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+  - target:
+      kind: Service
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+  - target:
+      kind: ConfigMap
+      name: app-config
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+  - target:
+      kind: Secret
+      name: app-secret
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+  - target:
+      kind: ServiceAccount
+      name: app-sa
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+  - target:
+      kind: NetworkPolicy
+      name: app-network-policy
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+  # Resource allocation patches
+  - target:
+      kind: Deployment
+      name: app
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 100m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 128Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 200m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 256Mi

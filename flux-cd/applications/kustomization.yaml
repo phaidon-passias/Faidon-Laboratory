@@ -4,10 +4,8 @@ kind: Kustomization
 metadata:
   name: applications
 
-resources:
-  - mock-cluster-aka-namespaces/dev
-  - mock-cluster-aka-namespaces/staging
-  - mock-cluster-aka-namespaces/production
+# Note: Environments are managed separately via individual GitRepositories
+# to avoid namespace conflicts and enable independent deployments
 
 commonLabels:
   app.kubernetes.io/part-of: kaiko-assignment
