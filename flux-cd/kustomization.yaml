@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 
 resources:
-  - bootstrap
+  - bootstrap/flux-system
   - applications
 
 commonLabels:
