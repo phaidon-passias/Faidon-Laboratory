@@ -367,3 +367,4 @@ This structure enables clear ownership, minimal duplication, and maximum reusabi
 
 
 TODO: Screenshots for everything.
+TODO: ADD documentation on how to use flux with their setup....
