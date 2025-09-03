@@ -7,7 +7,7 @@ metadata:
 
 resources:
   - namespace.yaml
-  - ../../../kubernetes_manifests/app.yaml  # Fix the path
+  - ../../../kubernetes_manifests/app.yaml  # This no longer has namespace conflicts
 
 commonLabels:
   app.kubernetes.io/name: app
