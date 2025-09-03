@@ -4,31 +4,15 @@
 
 `makefile`: A makefile to help with the creation/deletion of the cluster, deployment of app, deploying of monitoring (opentelemetry), gitops(prefered tool is fluxCD)
 
-`kind-three-node`: Simple three node cluster with 2 workers and one controlplane
+`kind-three-node.yaml`: Simple three node cluster with 2 workers and one controlplane
 
-## Part 1 – Kubernetes Setup:
+`setup-all.sh`: Setup all via make targets. Cluster, services, API metrics server
 
-- Provided kind-three-node (Used Kind)
-- Started my Makefile and run the application after some errors with the 5000 port on mac (Did you know that airplay receiver run there? neither did i.)
+`hpa-demo`: HPA demo via make targets. Create load, scale to 5 replicas
 
-## Part 2 – Application Refining
+`teardown-all.sh`: Teardown all infrastructure/apps via make targets. Gooooooodbye 
 
-- Create a Secret and configmap as stated by the assignement.md
-- Add PDB in case there is a running rollout of new nodes and the deployment shuts all pods. Yes this is a stateless app, and maybe nobody notices.
-- Add Affinity to the pod to choose all workers that the operator "controlplane" doesn't exist (cheeky i know. I played with what Kind gives me without adding anything else). I could have added a taint to the node of NoSchedule to not allow any workloads. 
-- Created Netpols to deny traffic by default and allow traffice from the same namespace and from the monitoring namespace. Felt cute. maybe i create an opencollector and scrap metrics
-- Added RBAC for the app service account to be able to read secrets/Configmaps
-- Set the Deployment Replicas to 2 and a PDB of 50% so we never run out. 
-- For the purpose of storings secrets as encrypted (safe) and not viewable by anyone.. in a production environment i would choose installing the ESO operator and the AWS external secret store named AWS Secret Manager. ConfigMaps are generaly for not so-sensitive data so maybe leave them as is? 
-- Added Minimum HPA for the deployment, 2-5 pods can run simultanusly. In the context of a bigger infrastructure, maybe we could run a custom metric 
-- Added Egress for DNS
-- Added Namespace Labels, TODO: Add Labels to all resources
-- Added Quotas and limit ranges for Namespace
-- Added labels for all resources 
-- Network policy tweaks: If i have other services in the cluster then i need
-- Add Egress UDP 53 for DNS requests 
-- Add Egress/Ingress from those namespaces
-- Fixed more makefile targets and created scripts to create the cluster, push services, load test and teardown the cluster
+
 
 ## How to run (scripts)
 
@@ -69,18 +53,84 @@ What it does:
 - Stops any lingering port-forward
 - Deletes the kind cluster and stops the local registry
 
+## Part 1 – Kubernetes and Application setup:
+
+### Kubernetes using Kind 
+
+- Provided kind-three-node (Used Kind)
+- Started my Makefile and run the application after some errors with the 5000 port on mac (Did you know that airplay receiver uses the same port as the registry? neither did i.)
+
+### Application base manifests and refining
+
+**Core Infrastructure:**
+- [x] **Namespace & Isolation** – Deploy in dedicated namespace with meaningful labels and NetworkPolicy for traffic isolation
+- [x] **Node Placement** – Use nodeSelector/affinity to ensure pods run only on worker nodes
+- [x] **Workload Controller** – Choose appropriate controller (Deployment recommended for stateless apps) and justify selection
+- [x] **Service Exposure** – Create Service resource and justify exposure method (ClusterIP/NodePort/LoadBalancer)
+
+**Application Configuration:**
+- [x] **Secrets Management** – Source `GREETING` from Kubernetes Secret (use stringData for simplicity)
+- [x] **Configuration Management** – Source `READINESS_DELAY_SEC` and `FAIL_RATE` from ConfigMap
+- [x] **Environment Variables** – Configure any additional deployment-specific variables as needed
+
+**Operational Excellence:**
+- [x] **Health Probes** – Configure readiness and liveness probes (account for 10-second startup delay)
+- [x] **Resource Management** – Set CPU/memory requests and limits with clear justification (consider latency vs. cost trade-offs)
+- [x] **Security Configuration** – Implement SecurityContext with non-root user, read-only root filesystem, and minimal capabilities
+- [x] **Scaling Strategy** – Implement HorizontalPodAutoscaler using CPU/memory metrics (document metrics-server requirements)
+- [x] **Availability Protection** – Configure PodDisruptionBudget to ensure service availability during updates
+
+**Advanced Considerations:**
+- [x] **Resource Quotas** – Consider namespace-level resource quotas for multi-tenancy
+- [x] **Monitoring Integration** – Ensure `/metrics` endpoint is accessible for monitoring setup
+
+### Implementation Details
+
+**What I've Implemented:**
+- ✅ **Secret and ConfigMap**: Created as stated in assignment.md for `GREETING`, `READINESS_DELAY_SEC`, and `FAIL_RATE`
+- ✅ **PodDisruptionBudget**: Set to 50% to prevent all pods from being terminated during rollouts (critical for stateless apps)
+- ✅ **Node Affinity**: Used affinity rules to ensure pods only run on worker nodes (avoiding controlplane)
+- ✅ **Network Policies**: Implemented default-deny with allow rules for same namespace and monitoring namespace
+- ✅ **RBAC**: Added service account permissions to read secrets and configmaps
+- ✅ **Deployment Strategy**: Set replicas to 2 with PDB ensuring 50% availability
+- ✅ **HPA Configuration**: Configured for 2-5 pods with CPU-based scaling
+- ✅ **Security**: Added non-root user, read-only filesystem, and minimal capabilities
+- ✅ **Resource Management**: Set CPU/memory requests and limits
+- ✅ **Health Probes**: Configured readiness/liveness with proper startup delays
+- ✅ **Namespace Quotas**: Added resource quotas and limit ranges
+- ✅ **Labels**: Applied consistent labeling across all resources
+
+**Design Decisions & Justifications:**
+- **Stateless App**: Chose Deployment over StatefulSet since the app has no persistent state
+- **Service Type**: Used ClusterIP with port-forward for development simplicity
+- **Replica Count**: Started with 2 replicas for high availability, scaling to 5 max
+- **Security Context**: Non-root execution with minimal privileges for production readiness
+- **Network Policy**: Default-deny approach with explicit allow rules for security
+
+**Production Considerations:**
+- For production secrets, I'd recommend External Secrets Operator (ESO) with AWS Secret Manager for encrypted storage
+- ConfigMaps are appropriate for non-sensitive configuration data
+- Consider custom metrics for HPA in larger infrastructures
+- Added DNS egress rules (UDP 53) for proper name resolution
+
+### Part 1 Acceptance Criteria
+
+- [x] Application accessible via port-forward to service on port 8000
+- [x] All health endpoints (`/healthz`, `/readyz`, `/work`, `/metrics`) respond correctly
+- [x] Resource requests/limits configured and justified in documentation
+- [x] Security context configured (non-root execution, minimal privileges)
+- [x] NetworkPolicy restricts traffic appropriately within namespace
+- [x] PodDisruptionBudget configured for high availability during updates
+- [x] SOLUTION.md explains **why** you chose specific primitives and overall design decisions
+- [x] Application successfully demonstrates configuration via Secret and ConfigMap
 
 
-TODO: - if i need metrics with prometheus i might need to enable the netpol and add metrics scrape annotations. (line 273 on the manifest)
-TODO: Add building and pushing images to the CI pipeline in makefile
-TODO: Specify the LOAD AND VERIFICATION OF HPA SCALES
-TODO: Add "hey as a formula that i use for my setup for HPA"
+### Fixing a bug with the application - metrics related issue
 
-## PART3: Fixing a bug with the application- metrics related issue
+There was a logical issue with when reporting latency, previously it only recorded latency for failed requests.
+I added some code to help with reporting also successful requests. Now all requests contribute to latency metrics. If we were to scale based on latency metrics then we would face the issue that we would have incoherent data.
 
-There was a logical issue with when reporting latency, previously it only recorded latency for failed requestes.
-I added some code to help with reporting also successfull request. Now all requested with contribute to latency metrics. If we were to scale based on latency metrics then we would face the issue that we would have incoherent data.
-If the problem statement behind the decision of reporting only the failed requests would be monitoring i'd suggest filter or drop a percentage of the successfull requests in your OTEL Collector. 
+If the problem statement behind the decision of reporting only the failed requests would be monitoring i'd suggest filter or drop a percentage of the successful requests in your OTEL Collector. 
 I see a problem if I'd set an SLA based on percentiles on this metric. Also questions like "how much Load i can handle before the service is degrades are not answered.
 
 I'd revert if its a dev only application and i don't care about further analysis or if i have a storage issue (from our last interview Robert noted that the biggest "cost-issue" kaiko is facing is storage. I'd have to do an analysis on whether this service is critical enough)(on the other hand prometheus is very efficient in storage, i wouldn't consider it a problem)
@@ -94,3 +144,33 @@ Average latency is artificially high (only failures, which might be slower)
 Percentiles are wrong (P50, P95, P99 based on incomplete data)
 HPA decisions could be wrong if you're scaling on latency metrics
 Monitoring dashboards show misleading performance data
+
+## PRODUCTION ENHANCEMENTS (TODO for later)
+
+### Operational Excellence
+- [ ] **Resource Optimization**: Increase CPU/memory requests/limits (current: 50m/64Mi → 100m/128Mi)
+- [ ] **HPA Tuning**: Lower CPU target from 70% to 60%, increase min replicas from 2 to 3
+- [ ] **Pod Disruption Budget**: Change from percentage to absolute numbers (minAvailable: 2)
+- [ ] **Liveness Probe Tuning**: Increase timeouts (initialDelay: 30s, period: 30s, timeout: 5s)
+
+### Monitoring & Observability
+- [ ] **Prometheus Integration**: Add scrape annotations to Service
+- [ ] **ServiceMonitor**: Create ServiceMonitor resource if using Prometheus Operator
+
+### Configuration Management
+- [ ] **Environment-Specific Configs**: Use Helm/Kustomize for prod vs dev settings
+- [ ] **External Secrets**: Replace plain Kubernetes secrets with external-secrets-operator
+
+### Quick Wins (Implement First)
+1. Pod Security Standards (namespace labels)
+2. Resource limits increase (CPU/memory)
+3. HPA tuning (lower CPU target, higher min replicas)
+4. Prometheus annotations on Service
+5. Liveness probe tuning (higher timeouts)
+
+## Additional Improvements I'd do
+
+- [ ] Implement Kustomize and fluxcd and maybe helm charts
+- [ ] Implement grafana prometheus  
+- [ ] Pull metrics in prometheus and use otel collector
+
