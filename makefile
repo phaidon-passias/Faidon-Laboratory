@@ -117,11 +117,23 @@ hpa-watch: ## Watch HPA and deployment scaling
 install-metrics-server: ## Install metrics-server and patch flags for kind, then verify
 	@echo "Installing metrics-server..."
 	@$(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml | cat
-	@echo "Patching metrics-server for kind (insecure TLS to kubelet)..."
-	@$(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' | cat || true
-	@echo "Waiting for metrics-server rollout..."
-	@$(KUBECTL) -n kube-system rollout status deploy/metrics-server --timeout=120s | cat
+
+	@echo "Patching metrics-server flags for kind if missing..."
+	@if ! $(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-insecure-tls'; then \
+	  $(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' | cat || true; \
+	fi
+	@if ! $(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-preferred-address-types'; then \
+	  $(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP"}]' | cat || true; \
+	fi
+
+	@echo "Waiting for metrics-server Deployment to be Available..."
+	@$(KUBECTL) -n kube-system rollout status deploy/metrics-server --timeout=180s | cat || true
+	@$(KUBECTL) -n kube-system wait deploy/metrics-server --for=condition=Available --timeout=60s | cat || true
+
+	@echo "Waiting for metrics API (v1beta1.metrics.k8s.io) to be Available..."
+	@$(KUBECTL) wait --for=condition=Available apiservice v1beta1.metrics.k8s.io --timeout=120s | cat || true
+
 	@echo "Verifying metrics API..."
-	@$(KUBECTL) get apiservices | grep metrics | cat
+	@$(KUBECTL) get apiservices | grep metrics | cat || true
 	@$(KUBECTL) top pods -A | head -n 5 | cat || true
 

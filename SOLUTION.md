@@ -27,6 +27,7 @@
 - Added labels for all resources 
 
 TODO: - the metrics-api server creation is missing some flag in the creation. the prompt returns fail and the metrics server is up 
+TODO: - if i need metrics with prometheus i might need to enable the netpol and add metrics scrape annotations. (line 273 on the manifest)
 
 - Network policy tweaks: If i have other services in the cluster then i need
 - Add Egress UDP 53 for DNS requests 
