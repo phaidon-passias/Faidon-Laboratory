@@ -14,7 +14,7 @@ KUBE_CONTEXT ?= kind-$(CLUSTER_NAME)
 CREATE_WAIT ?= 120s
 KIND_CONFIG ?= kind-three-node.yaml
 HPA_DURATION ?= 120        # seconds
-HPA_CONCURRENCY ?= 50      # parallel clients
+HPA_CONCURRENCY ?= 200      # parallel clients
 HPA_PAUSE ?= 0.1    
 
 .DEFAULT_GOAL := help
@@ -108,14 +108,14 @@ hpa-load: ## Port-forward svc/app and generate load (hey if available; robust cl
 	done; \
 	if command -v hey >/dev/null 2>&1; then \
 	  echo "Running hey: duration=$(HPA_DURATION)s, concurrency=$(HPA_CONCURRENCY)"; \
-	  hey -z $${HPA_DURATION}s -c $(HPA_CONCURRENCY) http://localhost:8080/work; \
+	  hey -z $(strip $(HPA_DURATION))s -c $(strip $(HPA_CONCURRENCY)) http://localhost:8080/work; \
 	else \
 	  echo "hey not installed; using curl fallback"; \
-	  end=$$(($$(date +%s)+$(HPA_DURATION))); \
+	  end=$$(($$(date +%s)+$(strip $(HPA_DURATION)))); \
 	  while [ $$(date +%s) -lt $$end ]; do \
-	    for i in $$(seq 1 $(HPA_CONCURRENCY)); do curl -s -o /dev/null http://localhost:8080/work & done; \
+	    for i in $$(seq 1 $(strip $(HPA_CONCURRENCY))); do curl -s -o /dev/null http://localhost:8080/work & done; \
 	    wait; \
-	    sleep $(HPA_PAUSE); \
+	    sleep $(strip $(HPA_PAUSE)); \
 	  done; \
 	fi
 
@@ -126,7 +126,7 @@ hpa-watch: ## Watch HPA and deployment scaling
 hpa-stop: ## Stop port-forward (if left running)
 	@kill $$(cat /tmp/pf-app.pid) >/dev/null 2>&1 || true
 	@rm -f /tmp/pf-app.pid
-	
+
 # ------------------------------
 # Metrics Server (metrics.k8s.io) install for kind
 # ------------------------------
