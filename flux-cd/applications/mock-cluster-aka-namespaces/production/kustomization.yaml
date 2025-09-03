@@ -1,0 +1,97 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: app-production
+  namespace: production
+
+resources:
+  - ../../base-app-config
+
+namespace: production
+
+patches:
+  - target:
+      kind: Namespace
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: production
+  - target:
+      kind: LimitRange
+      name: app-limits
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: production
+      - op: replace
+        path: /metadata/name
+        value: production-limits
+  - target:
+      kind: ResourceQuota
+      name: app-quota
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: production
+      - op: replace
+        path: /metadata/name
+        value: production-quota
+      - op: replace
+        path: /spec/hard/requests.cpu
+        value: "4"
+      - op: replace
+        path: /spec/hard/requests.memory
+        value: 4Gi
+      - op: replace
+        path: /spec/hard/limits.cpu
+        value: "8"
+      - op: replace
+        path: /spec/hard/limits.memory
+        value: 8Gi
+      - op: replace
+        path: /spec/hard/pods
+        value: "25"
+  - target:
+      kind: Deployment
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: production
+      - op: replace
+        path: /spec/replicas
+        value: 3
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 250m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 256Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 500m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 512Mi
+  - target:
+      kind: Service
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: production
+  - target:
+      kind: NetworkPolicy
+      name: app-network-policy
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: production
+      - op: replace
+        path: /spec/podSelector/matchLabels/app
+        value: app
+
+commonLabels:
+  app.kubernetes.io/environment: production

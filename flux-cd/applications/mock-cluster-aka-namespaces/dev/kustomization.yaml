@@ -1,0 +1,97 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: app-dev
+  namespace: dev
+
+resources:
+  - ../../base-app-config
+
+namespace: dev
+
+patches:
+  - target:
+      kind: Namespace
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: dev
+  - target:
+      kind: LimitRange
+      name: app-limits
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: dev
+      - op: replace
+        path: /metadata/name
+        value: dev-limits
+  - target:
+      kind: ResourceQuota
+      name: app-quota
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: dev
+      - op: replace
+        path: /metadata/name
+        value: dev-quota
+      - op: replace
+        path: /spec/hard/requests.cpu
+        value: "1"
+      - op: replace
+        path: /spec/hard/requests.memory
+        value: 1Gi
+      - op: replace
+        path: /spec/hard/limits.cpu
+        value: "2"
+      - op: replace
+        path: /spec/hard/limits.memory
+        value: 2Gi
+      - op: replace
+        path: /spec/hard/pods
+        value: "10"
+  - target:
+      kind: Deployment
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: dev
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 50m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 64Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 100m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 128Mi
+  - target:
+      kind: Service
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: dev
+  - target:
+      kind: NetworkPolicy
+      name: app-network-policy
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: dev
+      - op: replace
+        path: /spec/podSelector/matchLabels/app
+        value: app
+
+commonLabels:
+  app.kubernetes.io/environment: development

@@ -1,0 +1,97 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: app-staging
+  namespace: staging
+
+resources:
+  - ../../base-app-config
+
+namespace: staging
+
+patches:
+  - target:
+      kind: Namespace
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: staging
+  - target:
+      kind: LimitRange
+      name: app-limits
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+      - op: replace
+        path: /metadata/name
+        value: staging-limits
+  - target:
+      kind: ResourceQuota
+      name: app-quota
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+      - op: replace
+        path: /metadata/name
+        value: staging-quota
+      - op: replace
+        path: /spec/hard/requests.cpu
+        value: "2"
+      - op: replace
+        path: /spec/hard/requests.memory
+        value: 2Gi
+      - op: replace
+        path: /spec/hard/limits.cpu
+        value: "4"
+      - op: replace
+        path: /spec/hard/limits.memory
+        value: 4Gi
+      - op: replace
+        path: /spec/hard/pods
+        value: "15"
+  - target:
+      kind: Deployment
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 100m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 128Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 200m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 256Mi
+  - target:
+      kind: Service
+      name: app
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+  - target:
+      kind: NetworkPolicy
+      name: app-network-policy
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: staging
+      - op: replace
+        path: /spec/podSelector/matchLabels/app
+        value: app
+
+commonLabels:
+  app.kubernetes.io/environment: staging
