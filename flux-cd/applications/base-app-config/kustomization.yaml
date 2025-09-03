@@ -18,6 +18,7 @@ resources:
   - horizontalpodautoscaler.yaml
   - role.yaml
   - rolebinding.yaml
+  - servicemonitor.yaml
 
 labels:
   - pairs:

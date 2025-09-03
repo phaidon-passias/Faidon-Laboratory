@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: app-monitor
+  namespace: app
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/component: application
+    app.kubernetes.io/version: v1.0.0
+    # This label is important - Prometheus looks for ServiceMonitors with this label
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: app
+      app.kubernetes.io/part-of: kaiko-assignment
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+    # Add any additional labels you want to attach to these metrics
+    targetLabels:
+      - app.kubernetes.io/name
+      - app.kubernetes.io/part-of
+      - app.kubernetes.io/component
+      - app.kubernetes.io/version
