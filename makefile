@@ -224,7 +224,7 @@ GITHUB_REPO ?= kaiko-assignment
 use-context: check-deps ## Switch kubectl context to this cluster
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)
 
-start-cluster: create-cluster start-docker-registry use-context install-metrics-server ## Create cluster and switch kubectl context
+start-cluster: create-cluster start-docker-registry use-context install-metrics-server build-and-push-services ## Create cluster and switch kubectl context
 
 stop-cluster: stop-docker-registry delete-cluster  ## Delete cluster and stop docker registry
 
