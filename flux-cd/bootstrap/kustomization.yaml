@@ -7,6 +7,9 @@ metadata:
 
 resources:
   - flux-system
+  - sources.yaml
+  - applications.yaml
+  - infrastructure.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: kaiko-assignment
