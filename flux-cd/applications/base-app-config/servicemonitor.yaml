@@ -2,7 +2,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: app-monitor
-  namespace: app
   labels:
     app.kubernetes.io/name: app
     app.kubernetes.io/part-of: kaiko-assignment
@@ -20,9 +19,3 @@ spec:
     path: /metrics
     interval: 15s
     scrapeTimeout: 10s
-    # Add any additional labels you want to attach to these metrics
-    targetLabels:
-      - app.kubernetes.io/name
-      - app.kubernetes.io/part-of
-      - app.kubernetes.io/component
-      - app.kubernetes.io/version
