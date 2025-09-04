@@ -7,14 +7,15 @@ set -euo pipefail
 # - Stops port-forward if any
 # - Deletes kind cluster and local registry
 
-ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
+# Get the root directory (parent of scripts directory)
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 
 echo "🔄 [1/5] Suspending Flux reconciliation..."
-make -C "$ROOT_DIR" flux-suspend || true
+cd "$ROOT_DIR" && make flux-suspend || true
 
 echo "🧹 [2/5] Cleaning up application resources and Flux files..."
 echo "   This will also commit and push the cleanup to main..."
-make -C "$ROOT_DIR" cleanup-all || true
+cd "$ROOT_DIR" && make cleanup-all || true
 
 echo "🛑 [3/5] Stopping any lingering port-forward..."
 if [ -f /tmp/pf-app.pid ]; then
@@ -22,10 +23,10 @@ if [ -f /tmp/pf-app.pid ]; then
   rm -f /tmp/pf-app.pid
 fi
 
-echo "🗑️  [4/5] Deleting kind cluster..."
-make -C "$ROOT_DIR" delete-cluster || true
+echo "🛑 [4/5] Stopping local docker registry..."
+cd "$ROOT_DIR" && make stop-docker-registry || true
 
-echo "🛑 [5/5] Stopping local docker registry..."
-make -C "$ROOT_DIR" stop-docker-registry || true
+echo "🗑️  [5/5] Deleting kind cluster..."
+cd "$ROOT_DIR" && make delete-cluster || true
 
 echo "✅ Teardown complete. Flux has been suspended and cluster cleaned up."

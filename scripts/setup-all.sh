@@ -12,13 +12,14 @@ set -euo pipefail
 #     You'll need to add this key to your GitHub repository as a Deploy Key.
 #     The script will show you the key and instructions at the end.
 
-ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
+# Get the root directory (parent of scripts directory)
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 
 echo "🚀 [1/6] Ensuring kind cluster and metrics-server..."
-make -C "$ROOT_DIR" start-cluster
+cd "$ROOT_DIR" && make start-cluster
 
 echo "🔧 [2/6] Installing Flux CLI..."
-make -C "$ROOT_DIR" install-flux-cli
+cd "$ROOT_DIR" && make install-flux-cli
 
 echo "⚡ [3/6] Installing and bootstrapping Flux..."
 echo "   📝 Note: This process will:"
@@ -30,11 +31,11 @@ echo "      - Wait for Flux to be ready"
 
 # Pull latest changes from main
 echo "   📥 Pulling latest changes from main..."
-git pull origin main
+cd "$ROOT_DIR" && git pull origin main
 
 # Remove the flux-system folder if it exists (to avoid conflicts)
 echo "   🗑️  Cleaning up any existing flux-system folder..."
-rm -rf flux-cd/bootstrap/flux-system
+cd "$ROOT_DIR" && rm -rf flux-cd/bootstrap/flux-system
 
 # Install Flux components
 echo "   🔧 Installing Flux components..."
@@ -45,13 +46,13 @@ echo "   🚀 Bootstrapping Flux with Git repository..."
 flux bootstrap git --url=ssh://git@github.com/phaidon-passias/kaiko-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
 
 echo "   ⏳ Waiting for Flux to be ready..."
-make -C "$ROOT_DIR" wait-for-flux
+cd "$ROOT_DIR" && make wait-for-flux
 
 echo "🏗️  [4/6] Building and pushing app image..."
-make -C "$ROOT_DIR" build-and-push-services
+cd "$ROOT_DIR" && make build-and-push-services
 
 echo "🚀 [5/6] Deploying everything via Flux GitOps..."
-make -C "$ROOT_DIR" deploy-via-flux
+cd "$ROOT_DIR" && make deploy-via-flux
 
 echo "⏳ [6/6] Waiting for Flux to complete deployment..."
 echo "📊 Check status with: make flux-status"

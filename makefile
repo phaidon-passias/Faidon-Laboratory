@@ -71,21 +71,9 @@ cleanup-app: ## Clean up dev namespace (manual fallback)
 
 cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@echo "🧹 Cleaning up Flux-generated bootstrap files..."
-	@rm -f flux-cd/bootstrap/flux-system/gotk-components.yaml
-	@rm -f flux-cd/bootstrap/flux-system/gotk-sync.yaml
-	@rm -f flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "🧹 Creating minimal namespace file..."
-	@echo "apiVersion: v1" > flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "kind: Namespace" >> flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "metadata:" >> flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "  name: flux-system" >> flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "  labels:" >> flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "    app.kubernetes.io/name: flux-system" >> flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "    app.kubernetes.io/part-of: kaiko-assignment" >> flux-cd/bootstrap/flux-system/namespace.yaml
-	@echo "🧹 Cleaning up kustomization file content..."
-	@echo "# This file will be populated by Flux during bootstrap" > flux-cd/bootstrap/flux-system/kustomization.yaml
-	@echo "# Removing it to let Flux generate the correct version" >> flux-cd/bootstrap/flux-system/kustomization.yaml
-	@echo "✅ Flux bootstrap files cleaned up, kustomization structure preserved"
+	@echo "🗑️  Removing entire flux-system folder..."
+	@rm -rf flux-cd/bootstrap/flux-system
+	@echo "✅ Flux bootstrap files completely cleaned up"
 	@echo "📝 Committing cleanup to git..."
 	@git add flux-cd/bootstrap/flux-system/ || true
 	@git commit -m "Clean up Flux-generated bootstrap files" || true
@@ -408,8 +396,7 @@ install-metrics-server: ## Install metrics-server and patch flags for kind, then
 	@echo "Installing metrics-server..."
 	@$(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml | cat
 
-	@echo "
-	(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-insecure-tls'; then \
+	@if ! $(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-insecure-tls'; then \
 	  $(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' | cat || true; \
 	fi
 	@if ! $(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-preferred-address-types'; then \
