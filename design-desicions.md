@@ -41,7 +41,7 @@ If Flux CD is genuinely superior for this use case, we'd see:
 3. **Operational Complexity**: No UI means steeper learning curve for operators
 4. **Ecosystem Maturity**: ArgoCD has more integrations and community support
 
-**Our Response**: While valid concerns, the assignment's core goal is demonstrating GitOps principles, multi-environment management, and infrastructure as code - all of which Flux CD delivers more elegantly.
+**Our Response**: While valid concerns, the assignment's core goal is demonstrating GitOps principles, multi-environment management, and infrastructure as code - all of which we deliver with FluxCD.
 
 ---
 
@@ -71,17 +71,6 @@ If Flux CD is genuinely superior for this use case, we'd see:
 - **Base + Overlay pattern** instead of traditional templating
 
 This approach minimizes complexity while maximizing reusability.
-
-### Lens of Scalability
-*How would this issue change if scaled up or down?*
-
-**Small Scale (1-3 environments)**: Kustomize overlays are perfect - simple and maintainable.
-
-**Medium Scale (5-10 environments)**: Kustomize still works well with proper organization.
-
-**Large Scale (20+ environments)**: Might need to consider Helm for complex templating, but Kustomize can still handle most use cases with proper structure.
-
-**Our Scale**: 3 environments/namespaces - Kustomize is optimal. In the case of multiple apps i'd choose helm templating, create helm releases and abstract application CRDS from FluxCD structure. Use FluxCD helmrepositories as sources and deploy them like that.
 
 ---
 
@@ -276,7 +265,7 @@ Flux automatically discovers and syncs all Kustomizations in the `flux-cd/` dire
 *How can we apply unconventional methods to bootstrap challenges?*
 
 **Unconventional Solutions**:
-1. **Automated Bootstrap**: Created scripts that handle the entire bootstrap process
+1. **Automated Bootstrap**: Created scripts that handle the entire local bootstrap process
 2. **Health Checks**: Implemented automated verification of Flux CD readiness
 3. **Progressive Deployment**: Deployed environments in dependency order (infrastructure → applications)
 4. **Self-Healing**: Leveraged Flux CD's reconciliation loops for automatic recovery
@@ -289,7 +278,7 @@ Flux automatically discovers and syncs all Kustomizations in the `flux-cd/` dire
 
 If our decisions were truly optimal, we'd observe:
 - **Deployment Speed**: Sub-minute deployments across all environments
-- **Operational Simplicity**: Single command to deploy to any environment
+- **Operational Simplicity**: Automated actions to deploy to environments based on release targets
 - **Cost Efficiency**: Minimal infrastructure overhead
 - **Maintainability**: Easy to add new environments or modify existing ones
 - **Reliability**: Self-healing deployments with automatic rollback capabilities
@@ -351,7 +340,6 @@ If our decisions were truly optimal, we'd observe:
 - Implement advanced GitOps patterns (progressive delivery, canary deployments)
 
 **Long Term (2+ years)**:
-- Assess cluster federation for multi-region deployments
 - Consider service mesh integration for advanced networking
 - Evaluate platform engineering tools for enhanced developer experience
 
