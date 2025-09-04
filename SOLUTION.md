@@ -295,55 +295,55 @@ This structure enables clear ownership, minimal duplication, and maximum reusabi
 ### Screenshots Required
 
 #### 1. Cluster Status Verification
-**Command**: `make cluster-status`
-**Screenshot needed**: 
-- [ ] **Cluster Overview**: Show all namespaces (dev, staging, production, monitoring, flux-system)
-- [ ] **Pod Status**: All pods running and ready across all namespaces
-- [ ] **Node Status**: Three nodes (1 control-plane, 2 workers) with proper labels
+
+![Cluster Status](screenshots/cluster-status-1.png)
+*Complete cluster status across all namespaces (dev, staging, production, monitoring, flux-system)*
 
 #### 2. Application Health Endpoints
-**Command**: `make debug-metrics`
-**Screenshot needed**:
-- [ ] **Health Endpoints**: `/healthz`, `/readyz`, `/work` responses from all environments
-- [ ] **Metrics Endpoint**: `/metrics` output showing application metrics
-- [ ] **Cross-namespace Access**: Debug pod successfully querying app metrics
+
+![Debug Metrics 1](screenshots/debug-metrics-1.png)
+*Cross-namespace metrics access test*
+
+![Debug Metrics 2](screenshots/debug-metrics-2.png)
+*Application health endpoint verification*
+
+![Pod Status](screenshots/get-pods-1.png)
+*Pod status and health checks*
 
 #### 3. Flux CD GitOps Status
-**Command**: `make flux-status`
-**Screenshot needed**:
-- [ ] **Flux Controllers**: All controllers running and ready
-- [ ] **Kustomizations**: All kustomizations showing "Ready: True" status
-- [ ] **Git Repositories**: All GitRepository resources synced successfully
-- [ ] **Helm Releases**: Prometheus stack HelmRelease deployed successfully
+
+![Flux Status](screenshots/flux-status-1.png)
+*Flux CD controller status and synchronization state showing all kustomizations with "Ready: True" status*
 
 #### 4. Multi-Environment Deployment
-**Command**: `kubectl get pods -A`
-**Screenshot needed**:
-- [ ] **Environment Isolation**: Pods running in correct namespaces
-- [ ] **Resource Allocation**: Different replica counts per environment (dev: 1, staging: 2, production: 3)
-- [ ] **Monitoring Stack**: Prometheus, Grafana, AlertManager running in monitoring namespace
+
+![Multi-Environment Pods](screenshots/get-pods-1.png)
+*Applications deployed across dev, staging, and production namespaces with environment-specific configurations*
 
 #### 5. HPA Demonstration
-**Command**: `make hpa-demo`
-**Screenshot needed**:
-- [ ] **Load Generation**: Hey tool generating load against application
-- [ ] **Auto-scaling**: Pod count increasing from 2 to 5 replicas
-- [ ] **Metrics**: CPU utilization showing scaling triggers
-- [ ] **Scale-down**: Pod count returning to baseline after load stops
+
+![HPA Demo 1](screenshots/hpa-demo-1.png)
+*HPA scaling behavior during load test*
+
+![HPA Demo 2](screenshots/hpa-demo-2.png)
+*Pod scaling and CPU utilization metrics showing HPA scaling from 2 to 3 pods based on CPU threshold*
 
 #### 6. Network Policies & Security
-**Command**: `kubectl get networkpolicies -A`
-**Screenshot needed**:
-- [ ] **Network Policies**: All network policies applied correctly
-- [ ] **Security Context**: Pods running as non-root user (1001)
-- [ ] **Resource Limits**: CPU/memory requests and limits applied
+
+![Network Policies](screenshots/network-policies-1.png)
+*Network policies applied across namespaces demonstrating traffic isolation and security configurations*
 
 #### 7. Monitoring Stack Access
-**Command**: `kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80`
-**Screenshot needed**:
-- [ ] **Grafana Dashboard**: Prometheus data source configured
-- [ ] **Application Metrics**: Custom application metrics visible in Grafana
-- [ ] **Cluster Metrics**: Node and pod metrics from Prometheus
+
+![Grafana Container CPU](screenshots/grafana-container-cpu-usage.png)
+*Container CPU usage monitoring in Grafana*
+
+![Grafana CPU Metrics](screenshots/grafana-cpu-metric.png)
+*CPU metrics visualization*
+
+![Grafana Pod Restarts](screenshots/grafana-kube-restarts-1.png)
+*Pod restart monitoring showing Prometheus stack integration and Grafana dashboards*
+
 
 ### Verification Commands
 
