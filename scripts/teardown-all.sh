@@ -29,4 +29,7 @@ cd "$ROOT_DIR" && make stop-docker-registry || true
 echo "🗑️  [5/5] Deleting kind cluster..."
 cd "$ROOT_DIR" && make delete-cluster || true
 
+echo "🧹 Clearing setup progress file..."
+rm -f /tmp/kaiko-setup-progress
+
 echo "✅ Teardown complete. Flux has been suspended and cluster cleaned up."

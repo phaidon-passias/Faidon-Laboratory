@@ -29,11 +29,15 @@ check-deps: ## Verify required CLI tools are installed
 	@command -v docker >/dev/null 2>&1 || { echo "ERROR: docker not found. Install Docker Desktop first"; exit 1; }
 	@PORT=5000; \
 	if lsof -iTCP:$${PORT} -sTCP:LISTEN -n -P >/dev/null 2>&1; then \
-	  echo "ERROR: Port $${PORT} is already in use on the host."; \
-	  echo "This blocks the local registry (localhost:$${PORT})."; \
-	  echo "Close the process using port $${PORT} (on macOS, often AirPlay Receiver) and rerun the command."; \
-	  echo "Hint (macOS): System Settings → General → AirDrop & Handoff → AirPlay Receiver → Off"; \
-	  exit 1; \
+	  if docker ps --format "table {{.Names}}" | grep -q "kind-registry"; then \
+	    echo "INFO: Port $${PORT} is in use by kind-registry, continuing..."; \
+	  else \
+	    echo "ERROR: Port $${PORT} is already in use on the host."; \
+	    echo "This blocks the local registry (localhost:$${PORT})."; \
+	    echo "Close the process using port $${PORT} (on macOS, often AirPlay Receiver) and rerun the command."; \
+	    echo "Hint (macOS): System Settings → General → AirDrop & Handoff → AirPlay Receiver → Off"; \
+	    exit 1; \
+	  fi; \
 	fi
 
 create-cluster: check-deps ## Create kind cluster if missing, set context, install monitoring stack
@@ -326,8 +330,14 @@ build-and-push-services: app-build app-push
 
 start-docker-registry:
 	@echo "${GREEN}Start local docker registry:${RESET}\n"
-	@docker run -d -p "127.0.0.1:5000:5000" --restart=always --network bridge --name kind-registry registry:2  
-	@docker network connect "kind" "kind-registry"
+	@if docker ps -a --format "table {{.Names}}" | grep -q "kind-registry"; then \
+		echo "kind-registry container already exists, starting it..."; \
+		docker start kind-registry || true; \
+	else \
+		echo "Creating new kind-registry container..."; \
+		docker run -d -p "127.0.0.1:5000:5000" --restart=always --network bridge --name kind-registry registry:2; \
+	fi
+	@docker network connect "kind" "kind-registry" || true
 
 ## Stops the local docker registry
 stop-docker-registry:
@@ -395,6 +405,8 @@ hpa-stop: ## Stop port-forward (if left running)
 install-metrics-server: ## Install metrics-server and patch flags for kind, then verify
 	@echo "Installing metrics-server..."
 	@$(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml | cat
+	@echo "Patching metrics-server image to use more reliable registry..."
+	@$(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"replace","path":"/spec/template/spec/containers/0/image","value":"k8s.gcr.io/metrics-server/metrics-server:v0.8.0"}]' | cat || true
 
 	@if ! $(KUBECTL) -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null | grep -q -- '--kubelet-insecure-tls'; then \
 	  $(KUBECTL) -n kube-system patch deploy metrics-server --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' | cat || true; \
@@ -404,6 +416,8 @@ install-metrics-server: ## Install metrics-server and patch flags for kind, then
 	fi
 
 	@echo "Waiting for metrics-server Deployment to be Available..."
+	@echo "Cleaning up any old metrics-server replicas..."
+	@$(KUBECTL) -n kube-system delete replicaset --selector=k8s-app=metrics-server --ignore-not-found=true | cat || true
 	@$(KUBECTL) -n kube-system rollout status deploy/metrics-server --timeout=180s | cat || true
 	@$(KUBECTL) -n kube-system wait deploy/metrics-server --for=condition=Available --timeout=60s | cat || true
 

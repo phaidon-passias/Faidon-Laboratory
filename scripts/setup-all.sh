@@ -15,48 +15,152 @@ set -euo pipefail
 # Get the root directory (parent of scripts directory)
 ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 
-echo "🚀 [1/6] Ensuring kind cluster and metrics-server..."
-cd "$ROOT_DIR" && make start-cluster
+# Setup progress tracking
+SETUP_PROGRESS_FILE="/tmp/kaiko-setup-progress"
+STEP_COMPLETED="✅"
+STEP_SKIPPED="⏭️ "
+STEP_FAILED="❌"
 
-echo "🔧 [2/6] Installing Flux CLI..."
-cd "$ROOT_DIR" && make install-flux-cli
+# Function to mark step as completed
+mark_step_completed() {
+    echo "$1" >> "$SETUP_PROGRESS_FILE"
+}
 
-echo "⚡ [3/6] Installing and bootstrapping Flux..."
-echo "   📝 Note: This process will:"
-echo "      - Pull latest changes from main"
-echo "      - Clean up any existing flux-system folder"
-echo "      - Install Flux components directly in the cluster"
-echo "      - Bootstrap Flux with your Git repository"
-echo "      - Wait for Flux to be ready"
+# Function to check if step is completed
+is_step_completed() {
+    [ -f "$SETUP_PROGRESS_FILE" ] && grep -q "^$1$" "$SETUP_PROGRESS_FILE"
+}
 
-# Pull latest changes from main
-echo "   📥 Pulling latest changes from main..."
-cd "$ROOT_DIR" && git pull origin main
+# Function to wait for resource with timeout
+wait_for_resource() {
+    local resource_type="$1"
+    local resource_name="$2"
+    local namespace="${3:-default}"
+    local timeout="${4:-300}"
+    
+    echo "⏳ Waiting for $resource_type/$resource_name in namespace $namespace (timeout: ${timeout}s)..."
+    
+    if kubectl wait --for=condition=Ready "$resource_type/$resource_name" -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
+        echo "✅ $resource_type/$resource_name is ready"
+        return 0
+    else
+        echo "⚠️  $resource_type/$resource_name not ready within ${timeout}s, continuing..."
+        return 1
+    fi
+}
 
-# Remove the flux-system folder if it exists (to avoid conflicts)
-echo "   🗑️  Cleaning up any existing flux-system folder..."
-cd "$ROOT_DIR" && rm -rf flux-cd/bootstrap/flux-system
+# Function to wait for deployment with timeout
+wait_for_deployment() {
+    local deployment_name="$1"
+    local namespace="${2:-default}"
+    local timeout="${3:-300}"
+    
+    echo "⏳ Waiting for deployment/$deployment_name in namespace $namespace (timeout: ${timeout}s)..."
+    
+    if kubectl rollout status deployment/"$deployment_name" -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
+        echo "✅ deployment/$deployment_name is ready"
+        return 0
+    else
+        echo "⚠️  deployment/$deployment_name not ready within ${timeout}s, continuing..."
+        return 1
+    fi
+}
 
-# Install Flux components
-echo "   🔧 Installing Flux components..."
-flux install --version=v2.6.4
+# Step 1: Ensure kind cluster and metrics-server
+if ! is_step_completed "step1-cluster"; then
+    echo "🚀 [1/6] Ensuring kind cluster and metrics-server..."
+    
+    # Check if port 5000 is in use by kind-registry (allow it)
+    if lsof -i :5000 >/dev/null 2>&1; then
+        if docker ps --format "table {{.Names}}" | grep -q "kind-registry"; then
+            echo "ℹ️  Port 5000 is in use by kind-registry, continuing..."
+        else
+            echo "⚠️  Port 5000 is in use by another process. Attempting to continue..."
+        fi
+    fi
+    
+    cd "$ROOT_DIR" && make start-cluster
+    mark_step_completed "step1-cluster"
+else
+    echo "$STEP_SKIPPED [1/6] Kind cluster and metrics-server already set up"
+fi
 
-# Bootstrap Flux with Git repository
-echo "   🚀 Bootstrapping Flux with Git repository..."
-flux bootstrap git --url=ssh://git@github.com/phaidon-passias/kaiko-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
+# Step 2: Install Flux CLI
+if ! is_step_completed "step2-flux-cli"; then
+    echo "🔧 [2/6] Installing Flux CLI..."
+    cd "$ROOT_DIR" && make install-flux-cli
+    mark_step_completed "step2-flux-cli"
+else
+    echo "$STEP_SKIPPED [2/6] Flux CLI already installed"
+fi
 
-echo "   ⏳ Waiting for Flux to be ready..."
-cd "$ROOT_DIR" && make wait-for-flux
+# Step 3: Install and bootstrap Flux
+if ! is_step_completed "step3-flux-bootstrap"; then
+    echo "⚡ [3/6] Installing and bootstrapping Flux..."
+    echo "   📝 Note: This process will:"
+    echo "      - Pull latest changes from main"
+    echo "      - Clean up any existing flux-system folder"
+    echo "      - Install Flux components directly in the cluster"
+    echo "      - Bootstrap Flux with your Git repository"
+    echo "      - Wait for Flux to be ready"
 
-echo "🏗️  [4/6] Building and pushing app image..."
-cd "$ROOT_DIR" && make build-and-push-services
+    # Pull latest changes from main
+    echo "   📥 Pulling latest changes from main..."
+    cd "$ROOT_DIR" && git pull origin main
 
-echo "🚀 [5/6] Deploying everything via Flux GitOps..."
-cd "$ROOT_DIR" && make deploy-via-flux
+    # Remove the flux-system folder if it exists (to avoid conflicts)
+    echo "   🗑️  Cleaning up any existing flux-system folder..."
+    cd "$ROOT_DIR" && rm -rf flux-cd/bootstrap/flux-system
 
-echo "⏳ [6/6] Waiting for Flux to complete deployment..."
+    # Install Flux components
+    echo "   🔧 Installing Flux components..."
+    flux install --version=v2.6.4
+
+    # Bootstrap Flux with Git repository
+    echo "   🚀 Bootstrapping Flux with Git repository..."
+    flux bootstrap git --url=ssh://git@github.com/phaidon-passias/kaiko-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
+
+    echo "   ⏳ Waiting for Flux controllers to be ready..."
+    wait_for_deployment "helm-controller" "flux-system" 300
+    wait_for_deployment "kustomize-controller" "flux-system" 300
+    wait_for_deployment "notification-controller" "flux-system" 300
+    wait_for_deployment "source-controller" "flux-system" 300
+    
+    mark_step_completed "step3-flux-bootstrap"
+else
+    echo "$STEP_SKIPPED [3/6] Flux already bootstrapped"
+fi
+
+# Step 4: Build and push app image
+if ! is_step_completed "step4-build-push"; then
+    echo "🏗️  [4/6] Building and pushing app image..."
+    cd "$ROOT_DIR" && make build-and-push-services
+    mark_step_completed "step4-build-push"
+else
+    echo "$STEP_SKIPPED [4/6] App image already built and pushed"
+fi
+
+# Step 5: Deploy everything via Flux GitOps
+if ! is_step_completed "step5-deploy"; then
+    echo "🚀 [5/6] Deploying everything via Flux GitOps..."
+    cd "$ROOT_DIR" && make deploy-via-flux
+    
+    echo "   ⏳ Waiting for Prometheus stack to be ready..."
+    wait_for_deployment "kube-prometheus-stack-grafana" "monitoring" 600
+    wait_for_deployment "kube-prometheus-stack-operator" "monitoring" 600
+    
+    mark_step_completed "step5-deploy"
+else
+    echo "$STEP_SKIPPED [5/6] Applications already deployed"
+fi
+
+# Step 6: Final verification
+echo "⏳ [6/6] Final verification and cleanup..."
 echo "📊 Check status with: make flux-status"
 echo "📊 Watch logs with: make flux-logs"
+
+# Clear progress file on successful completion
+rm -f "$SETUP_PROGRESS_FILE"
 
 echo "🎉 Setup complete! Your cluster is now managed by Flux GitOps."
 echo "📝 Next steps:"
