@@ -18,7 +18,7 @@ HPA_CONCURRENCY ?= 200      # parallel clients
 HPA_PAUSE ?= 0.1    
 
 .DEFAULT_GOAL := help
-.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything install-tools check-versions
+.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything install-tools check-versions setup-all teardown-all hpa-demo hpa-reset debug-metrics check-flux
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -47,7 +47,7 @@ create-cluster: check-deps ## Create kind cluster if missing, set context, insta
 	fi
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)
 
-debug-container:
+debug-container: ## Debug container in default namespace
 	@$(KUBECTL) run -n default toolbox --rm -it --image=nicolaka/netshoot --restart=Never -- sh
 
 debug-app: ## Debug container in dev namespace
@@ -207,7 +207,7 @@ flux-status: ## Check FluxCD status
 	@flux get kustomizations
 	@echo ""
 	@echo "📦 FluxCD Helm Releases:"
-	@flux get helmreleases
+	@flux get helmreleases -A
 
 flux-logs: ## Follow FluxCD logs
 	@echo "Following FluxCD logs (Ctrl-C to stop)..."
@@ -222,6 +222,28 @@ flux-resume: ## Resume FluxCD reconciliation
 	@flux resume kustomization --all
 
 # ------------------------------
+# Script Wrappers
+# ------------------------------
+
+setup-all: ## Run complete setup script (creates cluster, installs Flux, deploys everything)
+	@./scripts/setup-all.sh
+
+teardown-all: ## Run complete teardown script (cleans up everything)
+	@./scripts/teardown-all.sh
+
+hpa-demo: ## Run HPA demo script (load testing and monitoring)
+	@./scripts/hpa-demo.sh
+
+hpa-reset: ## Reset HPA deployment to clean state (2 replicas)
+	@./scripts/hpa-demo.sh reset
+
+debug-metrics: ## Run debug metrics script (cross-namespace metrics testing)
+	@./scripts/debug-metrics-simple.sh
+
+check-flux: ## Check Flux readiness and sync status
+	@./scripts/check-flux-ready.sh
+
+# ------------------------------
 # Complete Flux Workflow
 # ------------------------------
 
@@ -232,7 +254,7 @@ wait-for-flux: ## Wait for Flux to be ready and synced
 	@echo "✅ Flux is ready!"
 	@echo "🔄 Waiting for initial sync to complete..."
 	@echo "⏳ This may take a few minutes for the first sync..."
-	@timeout 300s bash -c 'until ./check-flux-ready.sh; do sleep 10; done' || true
+	@timeout 300s bash -c 'until ./scripts/check-flux-ready.sh; do sleep 10; done' || true
 	@echo "🎉 Flux is fully synced and ready!"
 
 deploy-via-flux: ## Deploy everything via Flux GitOps
@@ -258,14 +280,27 @@ cluster-status: ## Check overall cluster and Flux status
 	@echo "📊 Flux Status:"
 	@echo "==============="
 	@if kubectl get namespace flux-system >/dev/null 2>&1; then \
-		./check-flux-ready.sh 2>/dev/null && echo "✅ Flux is healthy" || echo "❌ Flux has issues"; \
+		./scripts/check-flux-ready.sh 2>/dev/null && echo "✅ Flux is healthy" || echo "❌ Flux has issues"; \
 	else \
 		echo "❌ Flux not installed"; \
 	fi
 	@echo ""
 	@echo "🚀 Application Status:"
 	@echo "======================"
-	@kubectl get pods -A --no-headers | grep -v "kube-system\|local-path-storage" | head -10 || echo "No application pods found"
+	@echo "📋 All Namespaces:"
+	@kubectl get namespaces --no-headers | grep -E "(dev|staging|production|monitoring|flux-system)" | awk '{print "  " $$1 ": " $$2}'
+	@echo ""
+	@echo "📦 Pods by Environment:"
+	@echo "  Development:"
+	@kubectl get pods -n dev --no-headers 2>/dev/null | awk '{print "    " $$1 " (" $$3 ")"}' || echo "    No pods found"
+	@echo "  Staging:"
+	@kubectl get pods -n staging --no-headers 2>/dev/null | awk '{print "    " $$1 " (" $$3 ")"}' || echo "    No pods found"
+	@echo "  Production:"
+	@kubectl get pods -n production --no-headers 2>/dev/null | awk '{print "    " $$1 " (" $$3 ")"}' || echo "    No pods found"
+	@echo "  Monitoring:"
+	@kubectl get pods -n monitoring --no-headers 2>/dev/null | awk '{print "    " $$1 " (" $$3 ")"}' || echo "    No pods found"
+	@echo "  Flux System:"
+	@kubectl get pods -n flux-system --no-headers 2>/dev/null | awk '{print "    " $$1 " (" $$3 ")"}' || echo "    No pods found"
 
 # ------------------------------
 # Environment Management
@@ -329,7 +364,7 @@ list-clusters: check-deps ## List existing kind clusters
 	@$(KIND) get clusters
 
 # ------------------------------
-# HPA load test helpers
+# HPA load test helpers - Used while creating the hpa-demo script
 # ------------------------------
 
 hpa-load: ## Port-forward svc/app and generate load (hey if available; robust cleanup)

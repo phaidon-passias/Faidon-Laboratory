@@ -32,7 +32,7 @@ print_header() {
 # Configuration
 DEBUG_POD_NAME="debug-metrics-simple"
 DEBUG_NAMESPACE="monitoring"
-APP_NAMESPACE="app"
+APP_NAMESPACE="dev"
 APP_SERVICE="app"
 METRICS_PORT="80"
 DEBUG_IMAGE="nicolaka/netshoot"
@@ -72,13 +72,22 @@ print_status "App pods are running"
 # Check if debug pod already exists
 print_header "Debug Pod Setup"
 if kubectl get pod -n $DEBUG_NAMESPACE $DEBUG_POD_NAME &> /dev/null; then
-    print_status "Debug pod '$DEBUG_POD_NAME' already exists, reusing it..."
+    POD_STATUS=$(kubectl get pod -n $DEBUG_NAMESPACE $DEBUG_POD_NAME --no-headers | awk '{print $3}')
     
-    # Check if the existing pod is ready
-    if kubectl get pod -n $DEBUG_NAMESPACE $DEBUG_POD_NAME --no-headers | grep -q "Running"; then
-        print_status "Existing pod is running, proceeding with tests..."
+    if [ "$POD_STATUS" = "Running" ]; then
+        print_status "Debug pod '$DEBUG_POD_NAME' already exists and is running, reusing it..."
+    elif [ "$POD_STATUS" = "Completed" ] || [ "$POD_STATUS" = "Failed" ] || [ "$POD_STATUS" = "Error" ]; then
+        print_status "Debug pod '$DEBUG_POD_NAME' exists but is in '$POD_STATUS' status, deleting and recreating..."
+        kubectl delete pod -n $DEBUG_NAMESPACE $DEBUG_POD_NAME
+        print_status "Creating new debug pod '$DEBUG_POD_NAME' in namespace '$DEBUG_NAMESPACE'..."
+        kubectl run $DEBUG_POD_NAME \
+            -n $DEBUG_NAMESPACE \
+            --image=$DEBUG_IMAGE \
+            --restart=Never \
+            -- sleep 300
+        kubectl wait --for=condition=Ready pod/$DEBUG_POD_NAME -n $DEBUG_NAMESPACE --timeout=60s
     else
-        print_status "Existing pod is not running, waiting for it to be ready..."
+        print_status "Debug pod '$DEBUG_POD_NAME' exists but is in '$POD_STATUS' status, waiting for it to be ready..."
         kubectl wait --for=condition=Ready pod/$DEBUG_POD_NAME -n $DEBUG_NAMESPACE --timeout=60s
     fi
 else
