@@ -7,7 +7,7 @@ This document provides the technical implementation details, verification steps,
 ## Files Provided
 
 - **`makefile`**: Complete automation for cluster management, application deployment, monitoring setup, and Flux CD GitOps
-- **`kind-three-node.yaml`**: Three-node cluster configuration (1 control-plane, 2 workers)
+- **`scripts/kind-three-node.yaml`**: Three-node cluster configuration (1 control-plane, 2 workers)
 - **`scripts/`**: Comprehensive automation scripts for setup, testing, and teardown
 - **`flux-cd/`**: Complete GitOps configuration with multi-environment setup
 
@@ -18,7 +18,7 @@ This document provides the technical implementation details, verification steps,
 
 ### Kubernetes using Kind 
 
-- Provided kind-three-node (Using Kind)
+- Provided scripts/kind-three-node (Using Kind)
 - Started my Makefile and run the application after some errors with the 5000 port on mac (Did you know that airplay receiver uses the same port as the registry? neither did i.)
 
 ### Application base manifests and refining
