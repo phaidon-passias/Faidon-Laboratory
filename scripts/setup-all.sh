@@ -263,11 +263,5 @@ echo "📝 Next steps:"
 echo "   - Monitor deployment: make flux-status"
 echo "   - Run HPA demo: ./scripts/hpa-demo.sh run"
 echo "   - Check monitoring: kubectl get all -n monitoring"
-echo ""
-echo "⚠️  IMPORTANT: If this is a fresh setup, you'll need to add the Flux SSH key to your GitHub repository:"
-echo "   1. Go to your repo → Settings → Deploy keys"
-echo "   2. Add the public key shown during bootstrap"
-echo "   3. Check 'Allow write access'"
-echo "   4. Click 'Add key'"
 
 
