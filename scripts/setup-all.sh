@@ -49,7 +49,7 @@ wait_for_resource() {
     fi
 }
 
-# Function to wait for deployment with timeout
+# Function to wait for deployment with timeout and smart verification
 wait_for_deployment() {
     local deployment_name="$1"
     local namespace="${2:-default}"
@@ -57,12 +57,28 @@ wait_for_deployment() {
     
     echo "⏳ Waiting for deployment/$deployment_name in namespace $namespace (timeout: ${timeout}s)..."
     
+    # First try the standard rollout status
     if kubectl rollout status deployment/"$deployment_name" -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
         echo "✅ deployment/$deployment_name is ready"
         return 0
     else
-        echo "⚠️  deployment/$deployment_name not ready within ${timeout}s, continuing..."
-        return 1
+        echo "⚠️  deployment/$deployment_name not ready within ${timeout}s, doing final verification..."
+        
+        # Smart final check: wait a bit more and verify pods are actually ready
+        echo "   🔍 Final verification: checking if pods are actually ready..."
+        sleep 30
+        
+        # Check if deployment exists and has ready replicas
+        local ready_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+        local desired_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+        
+        if [ "$ready_replicas" = "$desired_replicas" ] && [ "$ready_replicas" != "0" ]; then
+            echo "✅ deployment/$deployment_name is actually ready (${ready_replicas}/${desired_replicas} replicas)"
+            return 0
+        else
+            echo "⚠️  deployment/$deployment_name still not ready (${ready_replicas}/${desired_replicas} replicas), continuing..."
+            return 1
+        fi
     fi
 }
 
@@ -158,6 +174,15 @@ if ! is_step_completed "step5-deploy"; then
     echo "   ⏳ Waiting for Prometheus stack to be ready..."
     wait_for_deployment "kube-prometheus-stack-grafana" "monitoring" 600
     wait_for_deployment "kube-prometheus-stack-operator" "monitoring" 600
+    
+    # Additional wait for Prometheus server (it often takes longer)
+    echo "   ⏳ Waiting for Prometheus server to be ready..."
+    wait_for_deployment "kube-prometheus-stack-prometheus" "monitoring" 300
+    
+    # Final comprehensive check
+    echo "   🔍 Final verification: checking all Prometheus stack components..."
+    sleep 10
+    kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus-stack
     
     mark_step_completed "step5-deploy"
 else
