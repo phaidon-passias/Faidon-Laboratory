@@ -57,11 +57,24 @@ wait_for_deployment() {
     
     echo "⏳ Waiting for deployment/$deployment_name in namespace $namespace (timeout: ${timeout}s)..."
     
-    # First try the standard rollout status
-    if kubectl rollout status deployment/"$deployment_name" -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
-        echo "✅ deployment/$deployment_name is ready"
-        return 0
+    # First try the standard rollout status - handle both deployments and statefulsets
+    local rollout_success=false
+    if kubectl get deployment "$deployment_name" -n "$namespace" >/dev/null 2>&1; then
+        if kubectl rollout status deployment/"$deployment_name" -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
+            echo "✅ deployment/$deployment_name is ready"
+            return 0
+        fi
+    elif kubectl get statefulset "$deployment_name" -n "$namespace" >/dev/null 2>&1; then
+        if kubectl rollout status statefulset/"$deployment_name" -n "$namespace" --timeout="${timeout}s" 2>/dev/null; then
+            echo "✅ statefulset/$deployment_name is ready"
+            return 0
+        fi
     else
+        echo "⚠️  Neither deployment nor statefulset $deployment_name found in namespace $namespace"
+        return 1
+    fi
+    
+    if [ "$rollout_success" = false ]; then
         echo "⚠️  deployment/$deployment_name not ready within ${timeout}s, doing final verification..."
         
         # Smart final check: be more patient and check pod status directly
@@ -72,14 +85,31 @@ wait_for_deployment() {
             echo "   ⏳ Attempt $i/6: waiting 30s and checking pod status..."
             sleep 30
             
-            # Check deployment status
-            local ready_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
-            local desired_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+            # Check deployment/statefulset status
+            local ready_replicas="0"
+            local desired_replicas="0"
+            if kubectl get deployment "$deployment_name" -n "$namespace" >/dev/null 2>&1; then
+                ready_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+                desired_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+            elif kubectl get statefulset "$deployment_name" -n "$namespace" >/dev/null 2>&1; then
+                ready_replicas=$(kubectl get statefulset "$deployment_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+                desired_replicas=$(kubectl get statefulset "$deployment_name" -n "$namespace" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+            fi
             
             echo "   📊 Current status: ${ready_replicas}/${desired_replicas} replicas ready"
             
-            # Also check pod status directly
-            local pod_status=$(kubectl get pods -n "$namespace" -l app.kubernetes.io/name="$deployment_name" -o jsonpath='{.items[*].status.phase}' 2>/dev/null || echo "")
+            # Also check pod status directly - handle both deployments and statefulsets
+            local pod_status=""
+            if kubectl get deployment "$deployment_name" -n "$namespace" >/dev/null 2>&1; then
+                # It's a deployment, use deployment labels
+                pod_status=$(kubectl get pods -n "$namespace" -l app.kubernetes.io/name="$deployment_name" -o jsonpath='{.items[*].status.phase}' 2>/dev/null || echo "")
+            elif kubectl get statefulset "$deployment_name" -n "$namespace" >/dev/null 2>&1; then
+                # It's a statefulset, use statefulset labels
+                pod_status=$(kubectl get pods -n "$namespace" -l app.kubernetes.io/name="$deployment_name" -o jsonpath='{.items[*].status.phase}' 2>/dev/null || echo "")
+            else
+                # Try to find pods by name pattern
+                pod_status=$(kubectl get pods -n "$namespace" | grep "$deployment_name" | awk '{print $3}' | tr '\n' ' ' || echo "")
+            fi
             echo "   🏃 Pod phases: $pod_status"
             
             if [ "$ready_replicas" = "$desired_replicas" ] && [ "$ready_replicas" != "0" ]; then
@@ -188,7 +218,7 @@ if ! is_step_completed "step5-deploy"; then
     
     # Additional wait for Prometheus server (it often takes longer)
     echo "   ⏳ Waiting for Prometheus server to be ready..."
-    wait_for_deployment "kube-prometheus-stack-prometheus" "monitoring" 300
+    wait_for_deployment "prometheus-kube-prometheus-stack-prometheus" "monitoring" 300
     
     # Final comprehensive check
     echo "   🔍 Final verification: checking all Prometheus stack components..."
