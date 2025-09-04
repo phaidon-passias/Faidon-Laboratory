@@ -216,8 +216,8 @@ if ! is_step_completed "step5-deploy"; then
     
     # First, wait for Flux to actually deploy the resources
     echo "   🔄 Waiting for Flux to deploy Prometheus stack resources..."
-    local max_wait=300
-    local waited=0
+    max_wait=300
+    waited=0
     while [ $waited -lt $max_wait ]; do
         if kubectl get deployment kube-prometheus-stack-grafana -n monitoring >/dev/null 2>&1; then
             echo "   ✅ Prometheus stack resources detected, proceeding with readiness checks..."
