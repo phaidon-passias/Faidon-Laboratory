@@ -64,21 +64,32 @@ wait_for_deployment() {
     else
         echo "⚠️  deployment/$deployment_name not ready within ${timeout}s, doing final verification..."
         
-        # Smart final check: wait a bit more and verify pods are actually ready
+        # Smart final check: be more patient and check pod status directly
         echo "   🔍 Final verification: checking if pods are actually ready..."
-        sleep 30
         
-        # Check if deployment exists and has ready replicas
-        local ready_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
-        local desired_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+        # Wait a bit more and check multiple times
+        for i in {1..6}; do
+            echo "   ⏳ Attempt $i/6: waiting 30s and checking pod status..."
+            sleep 30
+            
+            # Check deployment status
+            local ready_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+            local desired_replicas=$(kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+            
+            echo "   📊 Current status: ${ready_replicas}/${desired_replicas} replicas ready"
+            
+            # Also check pod status directly
+            local pod_status=$(kubectl get pods -n "$namespace" -l app.kubernetes.io/name="$deployment_name" -o jsonpath='{.items[*].status.phase}' 2>/dev/null || echo "")
+            echo "   🏃 Pod phases: $pod_status"
+            
+            if [ "$ready_replicas" = "$desired_replicas" ] && [ "$ready_replicas" != "0" ]; then
+                echo "✅ deployment/$deployment_name is actually ready (${ready_replicas}/${desired_replicas} replicas)"
+                return 0
+            fi
+        done
         
-        if [ "$ready_replicas" = "$desired_replicas" ] && [ "$ready_replicas" != "0" ]; then
-            echo "✅ deployment/$deployment_name is actually ready (${ready_replicas}/${desired_replicas} replicas)"
-            return 0
-        else
-            echo "⚠️  deployment/$deployment_name still not ready (${ready_replicas}/${desired_replicas} replicas), continuing..."
-            return 1
-        fi
+        echo "⚠️  deployment/$deployment_name still not ready after extended wait, continuing..."
+        return 1
     fi
 }
 
