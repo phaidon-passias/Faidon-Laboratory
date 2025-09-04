@@ -213,6 +213,26 @@ if ! is_step_completed "step5-deploy"; then
     cd "$ROOT_DIR" && make deploy-via-flux
     
     echo "   ⏳ Waiting for Prometheus stack to be ready..."
+    
+    # First, wait for Flux to actually deploy the resources
+    echo "   🔄 Waiting for Flux to deploy Prometheus stack resources..."
+    local max_wait=300
+    local waited=0
+    while [ $waited -lt $max_wait ]; do
+        if kubectl get deployment kube-prometheus-stack-grafana -n monitoring >/dev/null 2>&1; then
+            echo "   ✅ Prometheus stack resources detected, proceeding with readiness checks..."
+            break
+        fi
+        echo "   ⏳ Waiting for Prometheus stack resources to be deployed... (${waited}s/${max_wait}s)"
+        sleep 10
+        waited=$((waited + 10))
+    done
+    
+    if [ $waited -ge $max_wait ]; then
+        echo "   ⚠️  Prometheus stack resources not deployed within ${max_wait}s, continuing anyway..."
+    fi
+    
+    # Now wait for the deployments to be ready
     wait_for_deployment "kube-prometheus-stack-grafana" "monitoring" 600
     wait_for_deployment "kube-prometheus-stack-operator" "monitoring" 600
     
