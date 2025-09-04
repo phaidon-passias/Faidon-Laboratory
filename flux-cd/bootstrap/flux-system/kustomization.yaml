@@ -1,5 +1,2 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-- gotk-components.yaml
-- gotk-sync.yaml
+# This file will be populated by Flux during bootstrap
+# Removing it to let Flux generate the correct version
