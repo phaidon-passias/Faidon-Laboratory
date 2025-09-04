@@ -66,12 +66,6 @@ delete-cluster: check-deps ## Delete the kind cluster and delete port forwards
 	@$(KIND) delete cluster --name $(CLUSTER_NAME)
 	lsof -iTCP -sTCP:LISTEN -n -P
 
-cleanup-app: ## Clean up dev namespace (manual fallback)
-	@echo "Cleaning up dev namespace manually..."
-	@echo "⚠️  Note: This only cleans up manually created resources."
-	@echo "   Flux-managed resources should be removed via GitOps."
-	@$(KUBECTL) delete namespace dev --ignore-not-found=true || true
-	@echo "Dev namespace cleaned up"
 
 cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@echo "🧹 Cleaning up Flux-generated bootstrap files..."
@@ -85,7 +79,7 @@ cleanup-flux-files: ## Clean up Flux-generated bootstrap files
 	@git push origin main || true
 	@echo "🎉 Cleanup committed and pushed to main!"
 
-cleanup-all: cleanup-app cleanup-flux-files ## Clean up all application resources
+cleanup-all: cleanup-flux-files ## Clean up all application resources
 	@echo "All application resources cleaned up"
 
 # ------------------------------
