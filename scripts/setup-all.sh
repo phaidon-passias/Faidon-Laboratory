@@ -112,13 +112,23 @@ if ! is_step_completed "step3-flux-bootstrap"; then
     echo "   🗑️  Cleaning up any existing flux-system folder..."
     cd "$ROOT_DIR" && rm -rf flux-cd/bootstrap/flux-system
 
-    # Install Flux components
+    # Install Flux components (only if not already installed)
     echo "   🔧 Installing Flux components..."
-    flux install --version=v2.6.4
+    if kubectl get namespace flux-system >/dev/null 2>&1; then
+        echo "   ℹ️  Flux is already installed, skipping installation..."
+    else
+        echo "   🔧 Installing Flux components..."
+        flux install --version=v2.6.4
+    fi
 
-    # Bootstrap Flux with Git repository
+    # Bootstrap Flux with Git repository (only if not already bootstrapped)
     echo "   🚀 Bootstrapping Flux with Git repository..."
-    flux bootstrap git --url=ssh://git@github.com/phaidon-passias/kaiko-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
+    if kubectl get gitrepository flux-system -n flux-system >/dev/null 2>&1; then
+        echo "   ℹ️  Flux is already bootstrapped, skipping bootstrap..."
+    else
+        echo "   🚀 Bootstrapping Flux with Git repository..."
+        flux bootstrap git --url=ssh://git@github.com/phaidon-passias/kaiko-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
+    fi
 
     echo "   ⏳ Waiting for Flux controllers to be ready..."
     wait_for_deployment "helm-controller" "flux-system" 300
