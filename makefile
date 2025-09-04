@@ -251,11 +251,11 @@ wait-for-flux: ## Wait for Flux to be ready and synced
 
 deploy-via-flux: ## Deploy everything via Flux GitOps
 	@echo "🚀 Deploying everything via Flux GitOps..."
-	@echo "📥 Pulling latest changes from main..."
-	@git pull origin main || true
 	@echo "📝 Committing current state to trigger Flux deployment..."
 	@git add . || true
 	@git commit -m "Auto-deploy via Flux $(shell date +%Y%m%d-%H%M%S)" || true
+	@echo "📥 Pulling latest changes from main..."
+	@git pull origin main || true
 	@echo "📤 Pushing to main branch to trigger Flux..."
 	@git push origin main || true
 	@echo "✅ Deployment triggered! Flux will now sync your cluster."
