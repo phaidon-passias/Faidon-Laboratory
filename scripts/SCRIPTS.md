@@ -2,6 +2,15 @@
 
 This directory contains all automation scripts for the Kaiko Assignment Kubernetes and GitOps setup.
 
+## 📋 Table of Contents
+
+- [📊 Script Overview](#-script-overview)
+- [🏗️ Core Setup and Teardown Scripts](#️-core-setup-and-teardown-scripts)
+- [🧪 Testing and Demo Scripts](#-testing-and-demo-scripts)
+- [🔍 Monitoring and Debug Scripts](#-monitoring-and-debug-scripts)
+- [⚙️ Makefile Integration](#️-makefile-integration)
+- [🛠️ Script Development Guidelines](#️-script-development-guidelines)
+
 **📚 Related Documentation:**
 - **[../README.md](../README.md)** - Technical implementation details and assignment completion status
 - **[../how-to-run.MD](../how-to-run.MD)** - Step-by-step execution instructions and user guide

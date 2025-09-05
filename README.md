@@ -1,15 +1,25 @@
-# Solution - Technical Implementation & Results
+# Kaiko Assignment - Kubernetes & GitOps Solution
 
-## Overview
+A production-ready Kubernetes deployment with GitOps automation, monitoring, and multi-environment management.
 
-This document provides the technical implementation details, verification steps, and evidence of successful deployment for the Kaiko Assignment. 
+## 📋 Table of Contents
 
-**📋 Assignment Completion Status:**
-- ✅ **Part 1**: Kubernetes setup with production-grade features
-- ✅ **Part 2**: GitOps implementation with Flux CD (enhanced beyond ArgoCD requirement)
-- ✅ **Bonus**: Complete automation, monitoring, and multi-environment setup
+- [🎯 Assignment Completion](#-assignment-completion)
+- [🚀 Quick Start](#-quick-start)
+- [📚 Documentation](#-documentation)
+- [🏗️ Architecture](#️-architecture)
+- [🛠️ Prerequisites](#️-prerequisites)
+- [📋 Features Implemented](#-features-implemented)
+- [🎉 What's Included](#-whats-included)
 
-**📚 Related Documentation:**
+## 🎯 Assignment Completion
+
+✅ **Part 1**: Kubernetes setup with production-grade features  
+✅ **Part 2**: GitOps implementation with Flux CD (enhanced beyond ArgoCD requirement)  
+✅ **Bonus**: Complete automation, monitoring, and multi-environment setup
+
+## 📚 Documentation
+
 - **[how-to-run.MD](how-to-run.MD)** - Step-by-step execution instructions and user guide
 - **[design-decisions.md](design-decisions.md)** - Architectural decisions and trade-offs
 - **[scripts/SCRIPTS.md](scripts/SCRIPTS.md)** - Detailed script documentation and technical reference

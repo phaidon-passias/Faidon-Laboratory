@@ -2,6 +2,17 @@
 
 This guide provides step-by-step instructions for running the complete Kubernetes and GitOps solution for the Kaiko Assignment.
 
+## 📋 Table of Contents
+
+- [🛠️ Prerequisites](#️-prerequisites)
+- [🚀 Quick Start](#-quick-start)
+- [📋 Detailed Steps](#-detailed-steps)
+- [🔍 Verification](#-verification)
+- [🧪 Testing](#-testing)
+- [📊 Monitoring Access](#-monitoring-access)
+- [🧹 Cleanup](#-cleanup)
+- [❓ Troubleshooting](#-troubleshooting)
+
 **📚 Related Documentation:**
 - **[README.md](../README.md)** - Technical implementation details and assignment completion status
 - **[design-decisions.md](../design-decisions.md)** - Architectural decisions and trade-offs analysis

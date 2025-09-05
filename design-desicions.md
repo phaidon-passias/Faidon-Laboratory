@@ -1,6 +1,18 @@
 # Design Decisions & Architectural Trade-offs
 
-## Executive Summary
+## 📋 Table of Contents
+
+- [🎯 Executive Summary](#-executive-summary)
+- [📚 Documentation Architecture](#-documentation-architecture)
+- [1. GitOps Tool Selection: Flux CD vs ArgoCD](#1-gitops-tool-selection-flux-cd-vs-argocd)
+- [2. Configuration Management: Kustomize vs Helm](#2-configuration-management-kustomize-vs-helm)
+- [3. Cluster Architecture: Single Cluster vs Multiple Clusters](#3-cluster-architecture-single-cluster-vs-multiple-clusters)
+- [4. Kustomization Strategy: Base + Overlays](#4-kustomization-strategy-base--overlays)
+- [5. GitRepository and Top-Level Kustomization](#5-gitrepository-and-top-level-kustomization)
+- [6. Flux Bootstrap Challenges and Solutions](#6-flux-bootstrap-challenges-and-solutions)
+- [🎯 Conclusion](#-conclusion)
+
+## 🎯 Executive Summary
 
 This document outlines the key architectural decisions made during the implementation of a GitOps-based Kubernetes deployment strategy. We chose **Flux CD over ArgoCD**, **Kustomize over Helm** for application configuration, and implemented a **single cluster with three namespaces** instead of three separate clusters. Each decision was made after careful consideration of trade-offs, maintainability, and operational complexity.
 
@@ -454,24 +466,28 @@ If our decisions were truly optimal, we'd observe:
 1. **Flux CD over ArgoCD**: Better Kubernetes native integration and simpler bootstrap
 2. **Kustomize over Helm**: Lower complexity for low number of application
 3. **Single Cluster**: Optimal for this scale with proper namespace isolation
-4. **Hybrid Approach**: Best of both worlds - Kustomize for apps, Helm for 3rd party charts
+4. **Hybrid Approach**: Best of both worlds - Kustomize for apps, Helm for 3rd party solutions
 5. **Standardized Labeling**: app.kubernetes.io/* labels with commonLabels for consistency
 6. **Validation-First**: kubeconform integration for early error detection and quality assurance
 
 ### Future Considerations
 
 **Short Term (6 months)**:
+- Buil and bootstrap IAC & Flux with terraform/opentofu
+- Create Github actions to proper version the sources
+- Create process where commits to main would deploy changes to the dev cluster and create PRs for staging/production 
+- Differentiate creating releases for cluster components from simply adding a new feature  
 - Monitor resource utilization and adjust quotas
-- Implement automated testing for configuration changes
-- Add more comprehensive monitoring/logs/traces and alerting
 
 **Medium Term (1 year)**:
-- Evaluate migration to more sophisticated templating if complexity grows (Helm)
+- Implement automated testing for configuration changes
+- Add more comprehensive monitoring/logs/traces and alerting
+- Evaluate migration to more sophisticated templating if complexity grows (separate repo for Helm for apps, Kustomize for the layers)
 - Implement advanced GitOps patterns (progressive delivery, canary deployments)
 
 **Long Term (2+ years)**:
 - Consider service mesh integration for advanced networking
-- Evaluate platform engineering tools for enhanced developer experience
+- Evaluate platform engineering tools for enhanced developer experience (Create microservices./actions to compliment the setup and the ease in which developers can interact with the platform)
 
 ### Final Assessment
 
