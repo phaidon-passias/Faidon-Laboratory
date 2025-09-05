@@ -2,6 +2,11 @@
 
 This directory contains all automation scripts for the Kaiko Assignment Kubernetes and GitOps setup.
 
+**📚 Related Documentation:**
+- **[../README.md](../README.md)** - Technical implementation details and assignment completion status
+- **[../how-to-run.MD](../how-to-run.MD)** - Step-by-step execution instructions and user guide
+- **[../design-decisions.md](../design-decisions.md)** - Architectural decisions and trade-offs analysis
+
 ## Script Overview
 
 | Script | Purpose | Usage |
@@ -22,6 +27,7 @@ This directory contains all automation scripts for the Kaiko Assignment Kubernet
 - Creates Kind cluster with local registry
 - Installs metrics-server for HPA functionality
 - Installs Flux CD components directly in the cluster
+- **Validates kustomizations** with kubeconform (step 4/7)
 - **Bootstraps Flux CD** with your Git repository
 - Builds and pushes app Docker image to localhost:5000
 - **Deploys everything via Flux GitOps**
@@ -38,6 +44,8 @@ This directory contains all automation scripts for the Kaiko Assignment Kubernet
 - `docker` - Image building and registry
 - `flux` - Flux CD CLI for GitOps management
 - `kubectl` - Kubernetes cluster management
+- `kustomize` - Kustomize build and validation
+- `kubeconform` - Kubernetes schema validation
 - `git` - Version control
 
 ### `teardown-all.sh` - Complete Environment Cleanup
@@ -166,6 +174,40 @@ make hpa-watch
 - **Automatic cleanup** of port-forward connections
 - **Smart error handling** with graceful fallbacks
 
+## Kustomize Validation Scripts
+
+### Kustomize Validation Commands
+
+**Purpose**: Validate kustomizations and ensure configuration correctness before deployment.
+
+**Available Commands**:
+```bash
+# Complete kustomize validation (structure + build + schema)
+make kustomize-check
+
+# Individual validation steps
+make kustomize-build          # Build all kustomizations
+make kustomize-validate       # Schema validation with kubeconform
+make kustomize-lint           # Linting with kubeconform
+make kustomize-structure      # Analyze kustomization structure
+```
+
+**What they do**:
+- **`kustomize-check`**: Complete validation including structure analysis and build validation
+- **`kustomize-build`**: Builds all kustomizations (infrastructure, applications, bootstrap)
+- **`kustomize-validate`**: Validates generated resources against Kubernetes schemas using kubeconform
+- **`kustomize-lint`**: Lints kustomizations for best practices and schema compliance
+- **`kustomize-structure`**: Analyzes kustomization hierarchy and resource references
+
+**Integration**:
+- **Setup Process**: Validation runs automatically during `make setup-all` (step 4/7)
+- **CI/CD Ready**: Commands can be integrated into CI/CD pipelines
+- **Developer Workflow**: Immediate feedback on configuration errors
+
+**Dependencies**:
+- `kustomize` - Kustomize build and validation
+- `kubeconform` - Kubernetes schema validation
+
 ## Debug and Troubleshooting Scripts
 
 ### `debug-metrics-simple.sh` - Cross-Namespace Metrics Testing
@@ -220,24 +262,27 @@ make hpa-watch
 ### Complete Workflow
 
 ```bash
-# 1. Complete setup with Flux CD GitOps
+# 1. Complete setup with Flux CD GitOps (includes validation)
 ./scripts/setup-all.sh
 
-# 2. Check Flux CD status
+# 2. Validate kustomizations (optional - already done in setup)
+make kustomize-check
+
+# 3. Check Flux CD status
 ./scripts/check-flux-ready.sh
 
-# 3. Test metrics endpoint from monitoring namespace
+# 4. Test metrics endpoint from monitoring namespace
 ./scripts/debug-metrics-simple.sh
 
-# 4. Generate load and test HPA (choose one)
+# 5. Generate load and test HPA (choose one)
 ./scripts/hpa-demo.sh run                    # Standard test
 ./scripts/hpa-demo.sh aggressive             # Aggressive test (500+ concurrent)
 ./scripts/hpa-demo.sh burst                  # Burst pattern (extreme uneven distribution)
 
-# 5. Watch HPA scaling
+# 6. Watch HPA scaling
 ./scripts/hpa-demo.sh watch
 
-# 6. Cleanup everything (Flux-aware)
+# 7. Cleanup everything (Flux-aware)
 ./scripts/teardown-all.sh
 ```
 
@@ -262,6 +307,8 @@ make cleanup-all
 - **flux** - Flux CD CLI for GitOps management
 - **git** - Version control and GitOps workflow
 - **make** - Build automation and target management
+- **kustomize** - Kustomize build and validation
+- **kubeconform** - Kubernetes schema validation
 
 ### Optional Tools
 - **hey** - Load testing tool (falls back to curl if not available)

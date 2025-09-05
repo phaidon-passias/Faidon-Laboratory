@@ -10,46 +10,28 @@ This document provides the technical implementation details, verification steps,
 - ✅ **Bonus**: Complete automation, monitoring, and multi-environment setup
 
 **📚 Related Documentation:**
-- [design-decisions.md](design-decisions.md) - Architectural decisions and trade-offs
-- [how-to-run.MD](how-to-run.MD) - Step-by-step execution instructions
-- [scripts/SCRIPTS.md](scripts/SCRIPTS.md) - Detailed script documentation
+- **[how-to-run.MD](how-to-run.MD)** - Step-by-step execution instructions and user guide
+- **[design-decisions.md](design-decisions.md)** - Architectural decisions and trade-offs
+- **[scripts/SCRIPTS.md](scripts/SCRIPTS.md)** - Detailed script documentation and technical reference
 
-## General structure of repo provided
+## Repository Structure
 
-- **`README.md`**: Starting point of documentation
-- **`makefile`**: Complete automation for cluster management, application deployment, monitoring setup, and Flux CD GitOps. Included wrappers for scripts etc.
-- **`scripts/`**: Comprehensive automation scripts for setup, testing, and teardown
-- **`app/`**: App python directory provided by kaiko (changed some metrics)
+- **`README.md`**: Technical implementation details and assignment completion status
+- **`how-to-run.MD`**: Step-by-step execution instructions and user guide
+- **`design-decisions.md`**: Architectural decisions and trade-offs analysis
+- **`scripts/SCRIPTS.md`**: Detailed script documentation and technical reference
+- **`makefile`**: Complete automation for cluster management and GitOps
+- **`scripts/`**: Automation scripts for setup, testing, and teardown
+- **`app/`**: Python application with enhanced metrics
 - **`flux-cd/`**: Complete GitOps configuration with multi-environment setup
-- **`how-to-run`**: For the "I don't care about words, let me execute commands" person
-- **`design-decisions`**: 🤓A place for your inner reading child 🤓
-- **`screenshots/`**: Screenshots for documentation - Not to be read
-- **`_docsProvidedByKaikoUnchanged`**: A place to come back and cross check assignment details and completion status- Not altered at all- not to be read
-
-
-**See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed script documentation**
+- **`screenshots/`**: Documentation screenshots and verification evidence
+- **`_docsProvidedByKaikoUnchanged/`**: Original assignment documentation (unchanged)
 
 ## 🚀 Quick Reference
 
-### **Essential Commands**
-```bash
-# Complete setup (one command)
-make setup-all
+**For step-by-step execution instructions, see [how-to-run.MD](how-to-run.MD)**
 
-# Check status
-make cluster-status
-make flux-status
-
-# Access monitoring
-kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
-# Open: http://localhost:3000 (admin/admin)
-
-# Test HPA
-make hpa-demo
-
-# Cleanup
-make teardown-all
-```
+**For detailed script documentation, see [scripts/SCRIPTS.md](scripts/SCRIPTS.md)**
 
 ### **Key Features Implemented**
 - 🏗️ **3-node Kind cluster** with proper node labels/taints
@@ -59,6 +41,8 @@ make teardown-all
 - ⚖️ **HPA with metrics-server** for automatic scaling
 - 🔄 **GitOps with Flux CD** (multi-environment)
 - 🛡️ **PodDisruptionBudget** for high availability
+- 🏷️ **Standardized labeling** with app.kubernetes.io/* labels
+- 🔍 **Kustomize validation** with kubeconform schema validation
 - 🧪 **Complete automation** with makefile and scripts
 
 
@@ -174,7 +158,7 @@ flux-cd/                                    # Root directory for all GitOps-mana
 │                                           # Managed entirely by Flux CD controllers
 │
 ├── applications/                           # Application definitions and configurations
-│   ├── base-app-config/                   # Base Kustomize configuration for the application
+│   ├── _base-app-config/                  # Base Kustomize configuration for the application
 │   │   ├── deployment.yaml                # Base deployment manifest
 │   │   ├── service.yaml                   # Base service manifest
 │   │   ├── configmap.yaml                 # Base configuration
@@ -188,6 +172,7 @@ flux-cd/                                    # Root directory for all GitOps-mana
 │   │   ├── networkpolicy-2.yaml          # Base network policies
 │   │   ├── networkpolicy-3.yaml          # Base network policies
 │   │   ├── networkpolicy-4.yaml          # Base network policies
+│   │   ├── servicemonitor.yaml           # Base ServiceMonitor for Prometheus
 │   │   └── kustomization.yaml            # Base kustomization
 │   │
 │   ├── mock-cluster-aka-namespaces/      # Environment-specific Kustomize overlays
@@ -209,17 +194,21 @@ flux-cd/                                    # Root directory for all GitOps-mana
 │   └── kustomization.yaml                # Applications kustomization (includes mock-cluster-aka-namespaces)
 │
 ├── infrastructure/                         # Shared infrastructure components across environments
-│   ├── prometheus-stack/                  # Prometheus, Grafana, Alertmanager monitoring stack
-│   │   ├── namespace.yaml                 # Creates 'monitoring' namespace
-│   │   ├── helmrepository.yaml           # Prometheus Community Helm repository
-│   │   ├── helmrelease.yaml              # Kube-prometheus-stack Helm release
-│   │   ├── configmap.yaml                # Helm chart values (retention, resources, etc.)
-│   │   ├── kustomization.yaml            # Monitoring stack kustomization
-│   │   └── README.md                     # Documentation
+│   ├── _components/                       # Reusable infrastructure components
+│   |   └── netpols/          # Cross-namespace network policies (platform team managed)
+│   |   └── ingress-controllers/              # Ingress controllers, load balancers, service mesh
+│   │   └── _prometheus-stack/             # Prometheus, Grafana, Alertmanager monitoring stack
+│   │       ├── helmrepository.yaml       # Prometheus Community Helm repository
+│   │       ├── helmrelease.yaml          # Kube-prometheus-stack Helm release
+│   │       ├── configmap.yaml            # Helm chart values (retention, resources, etc.)
+│   │       ├── kustomization.yaml        # Monitoring stack kustomization
+│   │       └── README.md                 # Documentation
+│   ├── mock-cluster-aka-namespaces/      # Mock cluster namespace definitions
+│   │   ├── monitoring/                   # Monitoring namespace configuration
+│   │   │   ├── namespace.yaml            # Creates 'monitoring' namespace
+│   │   │   └── kustomization.yaml        # References _components/_prometheus-stack
+│   │   └── kustomization.yaml            # Mock cluster namespaces kustomization
 │   │
-│   ├── cross-namespace-netpols/          # Cross-namespace network policies (platform team managed)
-│   └── ingress-controllers/              # Ingress controllers, load balancers, service mesh
-│
 ├── bootstrap/                              # Flux CD system configuration and bootstrap
 │   ├── sources.yaml                       # GitRepository definitions for all components
 │   │   ├── flux-system                   # Main repository reference
@@ -251,7 +240,7 @@ flux-cd/                                    # Root directory for all GitOps-mana
 
 ##### 2. Multi-Environment Strategy with Kustomize Overlays
 **Structure**: Base configuration + environment-specific overlays
-- **`base-app-config/`**: Single source of truth for all application manifests
+- **`_base-app-config/`**: Single source of truth for all application manifests
 - **`mock-cluster-aka-namespaces/{dev,staging,production}/`**: Environment-specific patches
 
 ##### 3. Resource Allocation Strategy
@@ -271,7 +260,7 @@ flux-cd/                                    # Root directory for all GitOps-mana
 - **Purpose**: Production workload handling
 
 ##### 4. Network Policy Organization
-- **App-specific netpols**: Located in `applications/base-app-config/` (managed by app teams)
+- **App-specific netpols**: Located in `applications/_base-app-config/` (managed by app teams)
 - **Cross-namespace netpols**: Located in `infrastructure/cross-namespace-netpols/` (managed by platform teams)
 - **Monitoring access**: Network policies allow monitoring namespace to access app metrics
 
@@ -279,7 +268,7 @@ flux-cd/                                    # Root directory for all GitOps-mana
 
 ##### 5. Monitoring Stack Integration
 **Prometheus Stack**:
-- **Location**: `infrastructure/prometheus-stack/`
+- **Location**: `infrastructure/_components/_prometheus-stack/`
 - **Components**: Prometheus, Grafana, Alertmanager, Node Exporter, Kube State Metrics
 - **Management**: Deployed via HelmRelease with custom values
 - **Access**: Cross-namespace monitoring with proper network policies
@@ -294,6 +283,39 @@ Flux CD manages everything in the `flux-cd/` directory, providing:
 - **Progressive rollout**: Dev → Staging → Production deployment pipeline
 
 This structure enables clear ownership, minimal duplication, and maximum reusability while maintaining proper separation between platform and application concerns.
+
+### Kustomize Validation & Quality Assurance
+
+The project includes comprehensive kustomize validation to ensure all configurations are correct before deployment:
+
+#### **Validation Toolchain**
+- **`kubeconform`**: Schema validation for all Kubernetes resources
+- **`kustomize build`**: Validates kustomization structure and resource generation
+- **Integrated validation**: Built into the setup process (step 4/7)
+
+#### **Available Make Targets**
+```bash
+# Complete kustomize validation
+make kustomize-check          # Structure analysis + build validation
+
+# Individual validation steps
+make kustomize-build          # Build all kustomizations
+make kustomize-validate       # Schema validation with kubeconform
+make kustomize-lint           # Linting with kubeconform
+make kustomize-structure      # Analyze kustomization structure
+```
+
+#### **Validation Process**
+1. **Structure Analysis**: Validates kustomization hierarchy and resource references
+2. **Build Validation**: Ensures all kustomizations build without errors
+3. **Schema Validation**: Validates generated resources against Kubernetes schemas
+4. **Complete Tree Validation**: Validates the entire deployment tree through bootstrap kustomization
+
+#### **Quality Assurance Benefits**
+- **Early Error Detection**: Catches configuration errors before deployment
+- **Schema Compliance**: Ensures all resources conform to Kubernetes standards
+- **Consistent Validation**: Same validation process for all environments
+- **Automated Integration**: Validation runs automatically during setup
 
 ### GitOps Workflow
 
@@ -395,28 +417,7 @@ This structure enables clear ownership, minimal duplication, and maximum reusabi
 
 ### Verification Commands
 
-```bash
-# 1. Complete cluster status
-make cluster-status
-
-# 2. Flux CD status
-make flux-status
-
-# 3. Test application endpoints
-make debug-metrics
-
-# 4. Demonstrate HPA
-make hpa-demo
-
-# 5. Check all resources
-kubectl get all -A
-
-# 6. Verify network policies
-kubectl get networkpolicies -A
-
-# 7. Check resource quotas
-kubectl get resourcequotas -A
-```
+**For complete verification commands and troubleshooting, see [how-to-run.MD](how-to-run.MD) and [scripts/SCRIPTS.md](scripts/SCRIPTS.md)**
 
 ### Success Criteria Verification
 

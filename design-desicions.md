@@ -4,6 +4,11 @@
 
 This document outlines the key architectural decisions made during the implementation of a GitOps-based Kubernetes deployment strategy. We chose **Flux CD over ArgoCD**, **Kustomize over Helm** for application configuration, and implemented a **single cluster with three namespaces** instead of three separate clusters. Each decision was made after careful consideration of trade-offs, maintainability, and operational complexity.
 
+**📚 Related Documentation:**
+- **[README.md](README.md)** - Technical implementation details and assignment completion status
+- **[how-to-run.MD](how-to-run.MD)** - Step-by-step execution instructions and user guide
+- **[scripts/SCRIPTS.md](scripts/SCRIPTS.md)** - Detailed script documentation and technical reference
+
 ---
 
 ## 1. GitOps Tool Selection: Flux CD vs ArgoCD
@@ -150,19 +155,22 @@ This approach minimizes complexity while maximizing reusability.
 GitRepository (Single Source)
 ├── flux-cd/
 │   ├── applications/
-│   │   ├── base-app-config/           # Base application manifests
+│   │   ├── _base-app-config/          # Base application manifests
 │   │   └── mock-cluster-aka-namespaces/
 │   │       ├── dev/kustomization.yaml # Dev environment overlay
 │   │       ├── staging/kustomization.yaml # Staging overlay
 │   │       └── production/kustomization.yaml # Production overlay
 │   ├── infrastructure/                # Infrastructure core resources 
-│   │   └── prometheus-stack/          # Monitoring infrastructure
+│   │   ├── _components/               # Reusable infrastructure components
+│   │   │   └── _prometheus-stack/     # Monitoring infrastructure
+│   │   └── mock-cluster-aka-namespaces/ # Mock cluster namespace definitions
+│   │       └── monitoring/           # Monitoring namespace configuration
 │   └── bootstrap/                     # Flux CD system configuration
 ```
 
 ### Kustomization Patching Strategy
 
-**Base Configuration** (`base-app-config/`):
+**Base Configuration** (`_base-app-config/`):
 ```yaml
 # Single source of truth for all application manifests
 resources:
@@ -171,13 +179,26 @@ resources:
   - configmap.yaml
   - secret.yaml
   # ... all base resources
+
+commonLabels:
+  app.kubernetes.io/name: app
+  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/version: v1.0.0
+  app.kubernetes.io/component: application
+  app.kubernetes.io/managed-by: flux
 ```
 
 **Environment Overlays** (e.g., `dev/kustomization.yaml`):
 ```yaml
 resources:
   - namespace.yaml                    # Creates namespaces (required resource before others)
-  - ../../base-app-config            # References base configuration
+  - ../../_base-app-config           # References base configuration
+
+namespace: dev                        # Sets namespace for all resources
+
+commonLabels:
+  app.kubernetes.io/environment: development
+  app.kubernetes.io/tier: development
 
 patches:
   - target:
@@ -210,7 +231,103 @@ patches:
 
 ---
 
-## 5. Flux CD Bootstrap Process & Challenges
+## 5. Label Standardization Strategy
+
+### Decision: app.kubernetes.io/* Labels with commonLabels
+
+**The Choice**: We standardized all Kubernetes resources to use `app.kubernetes.io/*` labels and implemented them through Kustomize's `commonLabels` feature.
+
+### Trade-off Analysis
+
+| Aspect | Custom Labels | app.kubernetes.io/* Labels | Our Choice Rationale |
+|--------|---------------|----------------------------|---------------------|
+| **Industry Standard** | Project-specific | Kubernetes recommended | ✅ Standard labels - Better ecosystem compatibility |
+| **Tool Integration** | Limited support | Wide tool support | ✅ Standard labels - Better monitoring/observability |
+| **Consistency** | Manual enforcement | Automated via commonLabels | ✅ Standard labels - Consistent across all resources |
+| **Maintenance** | High overhead | Low overhead | ✅ Standard labels - Less maintenance burden |
+| **Learning Curve** | Team-specific | Industry standard | ✅ Standard labels - Easier for new team members |
+
+### Implementation Strategy
+
+**Base Kustomization** (`_base-app-config/kustomization.yaml`):
+```yaml
+commonLabels:
+  app.kubernetes.io/name: app
+  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/version: v1.0.0
+  app.kubernetes.io/component: application
+  app.kubernetes.io/managed-by: flux
+```
+
+**Environment-Specific Labels** (e.g., `dev/kustomization.yaml`):
+```yaml
+commonLabels:
+  app.kubernetes.io/environment: development
+  app.kubernetes.io/tier: development
+```
+
+### Lens of the Expert
+*What is an expert's experience with label standardization?*
+
+**Expert Perspective**:
+- **Kubernetes Best Practice**: `app.kubernetes.io/*` labels are the recommended standard
+- **Tool Ecosystem**: Prometheus, Grafana, and other tools expect these labels
+- **Operational Excellence**: Consistent labeling enables better automation and monitoring
+- **Future-Proofing**: Aligns with Kubernetes evolution and community standards
+
+**Our Implementation Benefits**:
+- **Automatic Application**: `commonLabels` ensures all resources get consistent labels
+- **Environment Differentiation**: Environment-specific labels for proper resource identification
+- **Monitoring Integration**: ServiceMonitor resources automatically discover applications
+- **Operational Clarity**: Clear resource ownership and purpose identification
+
+---
+
+## 6. Kustomize Validation & Quality Assurance
+
+### Decision: kubeconform for Schema Validation
+
+**The Choice**: We implemented comprehensive kustomize validation using `kubeconform` for schema validation and integrated it into our development workflow.
+
+### Trade-off Analysis
+
+| Aspect | No Validation | kubeconform | Our Choice Rationale |
+|--------|---------------|-------------|---------------------|
+| **Error Detection** | Runtime failures | Pre-deployment validation | ✅ kubeconform - Early error detection |
+| **Schema Compliance** | Manual verification | Automated validation | ✅ kubeconform - Ensures K8s compliance |
+| **Development Speed** | Fast but risky | Slightly slower but safe | ✅ kubeconform - Prevents deployment issues |
+| **Tool Integration** | None | Integrated with makefile | ✅ kubeconform - Seamless workflow integration |
+| **Learning Curve** | None | Minimal | ✅ kubeconform - Easy to adopt |
+
+### Implementation Strategy
+
+**Validation Toolchain**:
+```bash
+# Complete validation workflow
+make kustomize-check          # Structure + build + schema validation
+make kustomize-validate       # Schema validation with kubeconform
+make kustomize-build          # Build validation
+make kustomize-structure      # Structure analysis
+```
+
+**Integration Points**:
+- **Setup Process**: Validation runs automatically during `make setup-all` (step 4/7)
+- **CI/CD Ready**: Commands can be integrated into CI/CD pipelines
+- **Developer Workflow**: Immediate feedback on configuration errors
+
+### Lens of Innovation
+*How can we apply unconventional methods to validation?*
+
+**Unconventional Approach**: We implemented **complete tree validation** through the bootstrap kustomization:
+- **Bootstrap Validation**: Validates the entire deployment tree as Flux would see it
+- **Component Validation**: Individual validation of infrastructure and applications
+- **Automated Integration**: Validation runs automatically during setup
+
+This approach ensures that what we validate is exactly what gets deployed.
+
+---
+
+## 7. Flux CD Bootstrap Process & Challenges
 
 ### Bootstrap Implementation
 
@@ -272,7 +389,7 @@ Flux automatically discovers and syncs all Kustomizations in the `flux-cd/` dire
 
 ---
 
-## 6. Critical Analysis Using Multiple Lenses
+## 8. Critical Analysis Using Multiple Lenses
 
 ### Lens of Truth: What Would Success Look Like?
 
@@ -319,7 +436,7 @@ If our decisions were truly optimal, we'd observe:
 
 ---
 
-## 7. Conclusion & Recommendations
+## 9. Conclusion & Recommendations
 
 ### Key Takeaways
 
@@ -327,6 +444,8 @@ If our decisions were truly optimal, we'd observe:
 2. **Kustomize over Helm**: Lower complexity for low number of application
 3. **Single Cluster**: Optimal for this scale with proper namespace isolation
 4. **Hybrid Approach**: Best of both worlds - Kustomize for apps, Helm for 3rd party charts
+5. **Standardized Labeling**: app.kubernetes.io/* labels with commonLabels for consistency
+6. **Validation-First**: kubeconform integration for early error detection and quality assurance
 
 ### Future Considerations
 

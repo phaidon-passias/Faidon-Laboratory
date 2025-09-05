@@ -2,24 +2,40 @@
 
 This guide provides step-by-step instructions for running the complete Kubernetes and GitOps solution for the Kaiko Assignment.
 
+**📚 Related Documentation:**
+- **[README.md](../README.md)** - Technical implementation details and assignment completion status
+- **[design-decisions.md](../design-decisions.md)** - Architectural decisions and trade-offs analysis
+- **[scripts/SCRIPTS.md](SCRIPTS.md)** - Detailed script documentation and technical reference
+
 ## Prerequisites
 
 - **macOS/Linux** with shell access
 - **Docker Desktop** installed and running
 - **Git** for version control
+- **Required tools**: kind, kubectl, flux, kustomize, kubeconform, hey (installed via `make install-tools`)
 
 ## Quick Start
 
 ### 1. Initial Setup
 ```bash
-# Install all required tools (kind, kubectl, flux, hey)
+# Install all required tools (kind, kubectl, flux, kustomize, kubeconform, hey)
 make install-tools
 
 # Complete environment setup (creates cluster, installs Flux, deploys everything)
 make setup-all
 ```
 
-### 2. Verify Deployment
+### 2. Validate Configuration (Optional)
+```bash
+# Validate kustomizations (already done in setup, but can run independently)
+make kustomize-check
+
+# Individual validation steps
+make kustomize-build          # Build all kustomizations
+make kustomize-validate       # Schema validation with kubeconform
+```
+
+### 3. Verify Deployment
 ```bash
 # Check overall cluster and application status
 make cluster-status
@@ -28,7 +44,7 @@ make cluster-status
 make flux-status
 ```
 
-### 3. Test Application Functionality
+### 4. Test Application Functionality
 ```bash
 # Test cross-namespace metrics and monitoring
 make debug-metrics
@@ -37,7 +53,7 @@ make debug-metrics
 make hpa-demo
 ```
 
-### 4. Cleanup
+### 5. Cleanup
 ```bash
 # Complete environment cleanup
 make teardown-all
@@ -49,15 +65,33 @@ make teardown-all
 
 ### `make install-tools`
 **When to use**: First time setup or when tools are missing
+**Installs**: kind, kubectl, flux, kustomize, kubeconform, hey, kubectx
 
 ### `make setup-all`
 **When to use**: Initial setup or after complete teardown
+**Includes**: Automatic kustomize validation (step 4/7)
 
 ### `make cluster-status`
 **When to use**: Regular health checks, troubleshooting, or after deployments
 
 ### `make flux-status`
 **When to use**: After making changes, troubleshooting GitOps issues
+
+### `make kustomize-check`
+**When to use**: After making configuration changes, before deployment, CI/CD validation
+**What it does**: Complete validation (structure + build + schema validation)
+
+### `make kustomize-build`
+**When to use**: Testing kustomization builds, debugging configuration issues
+**What it does**: Builds all kustomizations (infrastructure, applications, bootstrap)
+
+### `make kustomize-validate`
+**When to use**: Schema validation, ensuring Kubernetes compliance
+**What it does**: Validates generated resources against Kubernetes schemas using kubeconform
+
+### `make kustomize-lint`
+**When to use**: Code quality checks, best practices validation
+**What it does**: Lints kustomizations for best practices and schema compliance
 
 ### `make debug-metrics`
 **When to use**: Testing monitoring setup, validating cross-namespace communication
