@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: mock-cluster-namespaces
+
+resources:
+  - monitoring/
+
+commonLabels:
+  app.kubernetes.io/name: mock-cluster-namespaces
+  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/component: infrastructure
+  app.kubernetes.io/managed-by: flux

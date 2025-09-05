@@ -18,7 +18,7 @@ HPA_CONCURRENCY ?= 200      # parallel clients
 HPA_PAUSE ?= 0.1    
 
 .DEFAULT_GOAL := help
-.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything install-tools check-versions setup-all teardown-all hpa-demo hpa-reset debug-metrics check-flux
+.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything install-tools check-versions setup-all teardown-all hpa-demo hpa-reset debug-metrics check-flux kustomize-build kustomize-validate kustomize-lint kustomize-structure
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -143,6 +143,54 @@ install-tools: ## Install all required tools (Flux, Kind, kubectl, etc.)
 		echo "✅ hey already installed"; \
 	fi
 	@echo ""
+	@echo "🔄 Checking and installing kubectx (kubectl context switcher)..."
+	@if ! command -v kubectx >/dev/null 2>&1; then \
+		if command -v brew >/dev/null 2>&1; then \
+			brew install kubectx; \
+		else \
+			echo "Homebrew not found. Please install kubectx manually:"; \
+			echo "  curl -L https://github.com/ahmetb/kubectx/releases/latest/download/kubectx -o kubectx"; \
+			echo "  chmod +x kubectx && sudo mv kubectx /usr/local/bin/"; \
+		fi \
+	else \
+		echo "✅ kubectx already installed"; \
+	fi
+	@echo ""
+	@echo "🔍 Checking and installing kustomize..."
+	@if ! command -v kustomize >/dev/null 2>&1; then \
+		if command -v brew >/dev/null 2>&1; then \
+			brew install kustomize; \
+		else \
+			echo "Homebrew not found. Please install kustomize manually:"; \
+			echo "  curl -s \"https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh\" | bash"; \
+			echo "  sudo mv kustomize /usr/local/bin/"; \
+		fi \
+	else \
+		echo "✅ kustomize already installed"; \
+	fi
+	@echo ""
+	@echo "🔧 Checking and installing kubeconform..."
+	@if ! command -v kubeconform >/dev/null 2>&1; then \
+		echo "Installing kubeconform from GitHub releases..."; \
+		ARCH=$$(uname -m); \
+		OS=$$(uname -s); \
+		if [ "$$OS" = "Darwin" ]; then \
+			if [ "$$ARCH" = "arm64" ]; then \
+				curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-darwin-arm64.tar.gz | tar xz; \
+			else \
+				curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-darwin-amd64.tar.gz | tar xz; \
+			fi; \
+		else \
+			curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz; \
+		fi; \
+		chmod +x kubeconform; \
+		sudo mv kubeconform /usr/local/bin/; \
+		rm -f LICENSE; \
+		echo "✅ kubeconform installed successfully"; \
+	else \
+		echo "✅ kubeconform already installed"; \
+	fi
+	@echo ""
 	@echo "🎯 Checking Docker..."
 	@if ! command -v docker >/dev/null 2>&1; then \
 		echo "❌ Docker not found. Please install Docker Desktop:"; \
@@ -156,11 +204,14 @@ install-tools: ## Install all required tools (Flux, Kind, kubectl, etc.)
 
 check-versions: ## Check versions of installed tools
 	@echo "📋 Tool versions:"
-	@echo "kubectl: $(shell kubectl version --client --short 2>/dev/null | head -1 || echo "not available")"
+	@echo "kubectl: $(shell kubectl version --client 2>/dev/null | grep "Client Version" | awk '{print $$3}' || echo "not available")"
 	@echo "kind: $(shell kind version 2>/dev/null || echo "not available")"
-	@echo "flux: $(shell flux version 2>/dev/null | head -1 || echo "not available")"
-	@echo "hey: $(shell hey version 2>/dev/null | head -1 || echo "not available")"
-	@echo "docker: $(shell docker version --format "{{.Version}}" 2>/dev/null | head -1 || echo "not available")"
+	@echo "flux: $(shell flux version --client 2>/dev/null | sed 's/flux: //' || echo "not available")"
+	@echo "hey: $(shell command -v hey >/dev/null 2>&1 && echo "installed" || echo "not available")"
+	@echo "kubectx: $(shell command -v kubectx >/dev/null 2>&1 && echo "installed" || echo "not available")"
+	@echo "kustomize: $(shell kustomize version 2>/dev/null | head -1 || echo "not available")"
+	@echo "kubeconform: $(shell kubeconform -v 2>/dev/null | head -1 || echo "not available")"
+	@echo "docker: $(shell docker version 2>/dev/null | grep "Version:" | head -1 | awk '{print $$2}' || echo "not available")"
 
 install-flux-cli: ## Install FluxCD CLI (legacy target - use install-tools instead)
 	@echo "Installing FluxCD CLI..."
@@ -423,4 +474,138 @@ install-metrics-server: ## Install metrics-server and patch flags for kind, then
 	@echo "Verifying metrics API..."
 	@$(KUBECTL) get apiservices | grep metrics | cat || true
 	@$(KUBECTL) top pods -A | head -n 5 | cat || true
+
+# ------------------------------
+# Kustomize Validation & Linting
+# ------------------------------
+
+KUSTOMIZE ?= kustomize
+KUBECONFORM ?= kubeconform
+
+kustomize-build: ## Build all kustomizations and show output
+	@echo "🔨 Building all kustomizations..."
+	@echo ""
+	@echo "📦 Infrastructure:"
+	@echo "=================="
+	@$(KUSTOMIZE) build flux-cd/infrastructure
+	@echo ""
+	@echo "🚀 Applications:"
+	@echo "================"
+	@$(KUSTOMIZE) build flux-cd/applications
+	@echo ""
+	@echo "⚡ Bootstrap:"
+	@echo "============="
+	@$(KUSTOMIZE) build flux-cd/bootstrap
+
+kustomize-validate: ## Validate kustomizations with kubeconform (if available)
+	@echo "🔍 Validating kustomizations with kubeconform..."
+	@if command -v $(KUBECONFORM) >/dev/null 2>&1; then \
+		echo "✅ kubeconform found, validating..."; \
+		echo ""; \
+		echo "🌳 Validating Complete Tree (Bootstrap):"; \
+		$(KUSTOMIZE) build flux-cd/bootstrap | $(KUBECONFORM) -strict -ignore-missing-schemas || echo "❌ Complete tree validation failed"; \
+		echo ""; \
+		echo "📦 Validating Infrastructure (standalone):"; \
+		$(KUSTOMIZE) build flux-cd/infrastructure | $(KUBECONFORM) -strict -ignore-missing-schemas || echo "❌ Infrastructure validation failed"; \
+		echo ""; \
+		echo "🚀 Validating Applications (standalone):"; \
+		$(KUSTOMIZE) build flux-cd/applications | $(KUBECONFORM) -strict -ignore-missing-schemas || echo "❌ Applications validation failed"; \
+	else \
+		echo "⚠️  kubeconform not found. Install with: make install-tools"; \
+	fi
+
+kustomize-lint: ## Lint kustomizations with kubeconform (if available)
+	@echo "🔍 Linting kustomizations with kubeconform..."
+	@if command -v $(KUBECONFORM) >/dev/null 2>&1; then \
+		echo "✅ kubeconform found, linting..."; \
+		echo ""; \
+		echo "📦 Linting Infrastructure:"; \
+		$(KUSTOMIZE) build flux-cd/infrastructure | $(KUBECONFORM) -strict -ignore-missing-schemas || echo "❌ Infrastructure linting failed"; \
+		echo ""; \
+		echo "🚀 Linting Applications:"; \
+		$(KUSTOMIZE) build flux-cd/applications | $(KUBECONFORM) -strict -ignore-missing-schemas || echo "❌ Applications linting failed"; \
+		echo ""; \
+		echo "⚡ Linting Bootstrap:"; \
+		$(KUSTOMIZE) build flux-cd/bootstrap | $(KUBECONFORM) -strict -ignore-missing-schemas || echo "❌ Bootstrap linting failed"; \
+	else \
+		echo "⚠️  kubeconform not found. Install with: make install-tools"; \
+	fi
+
+kustomize-structure: ## Show kustomization structure and count
+	@echo "📊 Kustomization Structure Analysis:"
+	@echo "===================================="
+	@echo ""
+	@echo "🔍 Finding all kustomization.yaml files..."
+	@echo ""
+	@echo "📦 Infrastructure Kustomizations:"
+	@echo "=================================="
+	@find flux-cd/infrastructure -name "kustomization.yaml" -type f | while read file; do \
+		dir=$$(dirname "$$file"); \
+		name=$$(grep "^metadata:" -A 5 "$$file" | grep "name:" | awk '{print $$2}' || echo "unnamed"); \
+		resources=$$(grep "^resources:" -A 20 "$$file" | grep "^- " | wc -l | tr -d ' '); \
+		echo "  📁 $$dir"; \
+		echo "     Name: $$name"; \
+		echo "     Resources: $$resources"; \
+		echo ""; \
+	done
+	@echo "🚀 Application Kustomizations:"
+	@echo "=============================="
+	@find flux-cd/applications -name "kustomization.yaml" -type f | while read file; do \
+		dir=$$(dirname "$$file"); \
+		name=$$(grep "^metadata:" -A 5 "$$file" | grep "name:" | awk '{print $$2}' || echo "unnamed"); \
+		resources=$$(grep "^resources:" -A 20 "$$file" | grep "^- " | wc -l | tr -d ' '); \
+		echo "  📁 $$dir"; \
+		echo "     Name: $$name"; \
+		echo "     Resources: $$resources"; \
+		echo ""; \
+	done
+	@echo "⚡ Bootstrap Kustomizations:"
+	@echo "============================"
+	@find flux-cd/bootstrap -name "kustomization.yaml" -type f | while read file; do \
+		dir=$$(dirname "$$file"); \
+		name=$$(grep "^metadata:" -A 5 "$$file" | grep "name:" | awk '{print $$2}' || echo "unnamed"); \
+		resources=$$(grep "^resources:" -A 20 "$$file" | grep "^- " | wc -l | tr -d ' '); \
+		echo "  📁 $$dir"; \
+		echo "     Name: $$name"; \
+		echo "     Resources: $$resources"; \
+		echo ""; \
+	done
+	@echo "📈 Summary:"
+	@echo "==========="
+	@total_kustomizations=$$(find flux-cd -name "kustomization.yaml" -type f | wc -l | tr -d ' '); \
+	echo "  Total Kustomizations: $$total_kustomizations"; \
+	total_resources=$$(find flux-cd -name "*.yaml" -not -name "kustomization.yaml" -type f | wc -l | tr -d ' '); \
+	echo "  Total Resource Files: $$total_resources"
+
+kustomize-check: kustomize-structure kustomize-build ## Complete kustomize check (structure + build)
+	@echo ""
+	@echo "✅ Kustomize check completed successfully!"
+	@echo "   All kustomizations built without errors."
+
+install-linters: ## Install kustomize validation tools
+	@echo "🔧 Installing kustomize validation tools..."
+	@echo ""
+	@echo "📦 Installing kubeconform..."
+	@if ! command -v kubeconform >/dev/null 2>&1; then \
+		echo "Installing kubeconform from GitHub releases..."; \
+		ARCH=$$(uname -m); \
+		OS=$$(uname -s); \
+		if [ "$$OS" = "Darwin" ]; then \
+			if [ "$$ARCH" = "arm64" ]; then \
+				curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-darwin-arm64.tar.gz | tar xz; \
+			else \
+				curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-darwin-amd64.tar.gz | tar xz; \
+			fi; \
+		else \
+			curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz; \
+		fi; \
+		chmod +x kubeconform; \
+		sudo mv kubeconform /usr/local/bin/; \
+		rm -f LICENSE; \
+		echo "✅ kubeconform installed successfully"; \
+	else \
+		echo "✅ kubeconform already installed"; \
+	fi
+	@echo ""
+	@echo "🎉 All kustomize validation tools are ready!"
 

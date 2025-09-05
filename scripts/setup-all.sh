@@ -125,7 +125,7 @@ wait_for_deployment() {
 
 # Step 1: Ensure kind cluster and metrics-server
 if ! is_step_completed "step1-cluster"; then
-    echo "🚀 [1/6] Ensuring kind cluster and metrics-server..."
+    echo "🚀 [1/7] Ensuring kind cluster and metrics-server..."
     
     # Check if port 5000 is in use by kind-registry (allow it)
     if lsof -i :5000 >/dev/null 2>&1; then
@@ -139,21 +139,21 @@ if ! is_step_completed "step1-cluster"; then
     cd "$ROOT_DIR" && make start-cluster
     mark_step_completed "step1-cluster"
 else
-    echo "$STEP_SKIPPED [1/6] Kind cluster and metrics-server already set up"
+    echo "$STEP_SKIPPED [1/7] Kind cluster and metrics-server already set up"
 fi
 
-# Step 2: Install Flux CLI
-if ! is_step_completed "step2-flux-cli"; then
-    echo "🔧 [2/6] Installing Flux CLI..."
-    cd "$ROOT_DIR" && make install-flux-cli
-    mark_step_completed "step2-flux-cli"
+# Step 2: Install all required tools
+if ! is_step_completed "step2-tools"; then
+    echo "🔧 [2/7] Installing all required tools..."
+    cd "$ROOT_DIR" && make install-tools
+    mark_step_completed "step2-tools"
 else
-    echo "$STEP_SKIPPED [2/6] Flux CLI already installed"
+    echo "$STEP_SKIPPED [2/7] All tools already installed"
 fi
 
 # Step 3: Install and bootstrap Flux
 if ! is_step_completed "step3-flux-bootstrap"; then
-    echo "⚡ [3/6] Installing and bootstrapping Flux..."
+    echo "⚡ [3/7] Installing and bootstrapping Flux..."
     echo "   📝 Note: This process will:"
     echo "      - Pull latest changes from main"
     echo "      - Clean up any existing flux-system folder"
@@ -195,21 +195,30 @@ if ! is_step_completed "step3-flux-bootstrap"; then
     
     mark_step_completed "step3-flux-bootstrap"
 else
-    echo "$STEP_SKIPPED [3/6] Flux already bootstrapped"
+    echo "$STEP_SKIPPED [3/7] Flux already bootstrapped"
 fi
 
-# Step 4: Build and push app image
-if ! is_step_completed "step4-build-push"; then
-    echo "🏗️  [4/6] Building and pushing app image..."
-    cd "$ROOT_DIR" && make build-and-push-services
-    mark_step_completed "step4-build-push"
+# Step 4: Validate kustomizations
+if ! is_step_completed "step4-validate"; then
+    echo "🔍 [4/7] Validating kustomizations..."
+    cd "$ROOT_DIR" && make kustomize-check
+    mark_step_completed "step4-validate"
 else
-    echo "$STEP_SKIPPED [4/6] App image already built and pushed"
+    echo "$STEP_SKIPPED [4/7] Kustomizations already validated"
 fi
 
-# Step 5: Deploy everything via Flux GitOps
-if ! is_step_completed "step5-deploy"; then
-    echo "🚀 [5/6] Deploying everything via Flux GitOps..."
+# Step 5: Build and push app image
+if ! is_step_completed "step5-build-push"; then
+    echo "🏗️  [5/7] Building and pushing app image..."
+    cd "$ROOT_DIR" && make build-and-push-services
+    mark_step_completed "step5-build-push"
+else
+    echo "$STEP_SKIPPED [5/7] App image already built and pushed"
+fi
+
+# Step 6: Deploy everything via Flux GitOps
+if ! is_step_completed "step6-deploy"; then
+    echo "🚀 [6/7] Deploying everything via Flux GitOps..."
     cd "$ROOT_DIR" && make deploy-via-flux
     
     echo "   ⏳ Waiting for Prometheus stack to be ready..."
@@ -245,13 +254,13 @@ if ! is_step_completed "step5-deploy"; then
     sleep 10
     kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus-stack
     
-    mark_step_completed "step5-deploy"
+    mark_step_completed "step6-deploy"
 else
-    echo "$STEP_SKIPPED [5/6] Applications already deployed"
+    echo "$STEP_SKIPPED [6/7] Applications already deployed"
 fi
 
-# Step 6: Final verification
-echo "⏳ [6/6] Final verification and cleanup..."
+# Step 7: Final verification
+echo "⏳ [7/7] Final verification and cleanup..."
 echo "📊 Check status with: make flux-status"
 echo "📊 Watch logs with: make flux-logs"
 
@@ -265,7 +274,7 @@ echo "=============="
 echo ""
 echo "🔍 1. Verify Deployment:"
 echo "   make cluster-status    # Check overall cluster and application status"
-echo "   make flux-status       # Check GitOps (Flux) status"
+echo "   make flux-status       # Check GitOps (Flux) satus"
 echo ""
 echo "🧪 2. Test Application Functionality:"
 echo "   make debug-metrics     # Test cross-namespace metrics and monitoring"

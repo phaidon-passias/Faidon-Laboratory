@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: monitoring
+
+namespace: monitoring
+
+resources:
+  - namespace.yaml
+  - ../../_components/_prometheus-stack
+
+commonLabels:
+  app.kubernetes.io/name: monitoring
+  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/component: infrastructure
+  app.kubernetes.io/environment: shared
+  app.kubernetes.io/tier: monitoring
+  app.kubernetes.io/managed-by: flux
+
+# patches:
+  # - # Any monitoring-specific patches can go here

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/environment: shared
+    app.kubernetes.io/tier: monitoring
+    app.kubernetes.io/managed-by: flux

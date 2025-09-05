@@ -8,7 +8,7 @@ namespace: staging
 
 resources:
   - namespace.yaml
-  - ../../base-app-config
+  - ../../_base-app-config
 
 labels:
   - pairs:
