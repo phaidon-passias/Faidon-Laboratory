@@ -6,10 +6,15 @@ This directory contains all automation scripts for the Kaiko Assignment Kubernet
 
 - [📊 Script Overview](#-script-overview)
 - [🏗️ Core Setup and Teardown Scripts](#️-core-setup-and-teardown-scripts)
-- [🧪 Testing and Demo Scripts](#-testing-and-demo-scripts)
-- [🔍 Monitoring and Debug Scripts](#-monitoring-and-debug-scripts)
-- [⚙️ Makefile Integration](#️-makefile-integration)
-- [🛠️ Script Development Guidelines](#️-script-development-guidelines)
+- [🧪 HPA Testing and Monitoring Scripts](#-hpa-testing-and-monitoring-scripts)
+- [🔍 Kustomize Validation Scripts](#-kustomize-validation-scripts)
+- [🛠️ Debug and Troubleshooting Scripts](#️-debug-and-troubleshooting-scripts)
+- [📋 Usage Examples](#-usage-examples)
+- [⚙️ Script Dependencies](#️-script-dependencies)
+- [🌐 Network Architecture](#-network-architecture)
+- [❓ Troubleshooting](#-troubleshooting)
+- [🔒 Security Considerations](#-security-considerations)
+- [⚡ Performance Notes](#-performance-notes)
 
 **📚 Related Documentation:**
 - **[../README.md](../README.md)** - Technical implementation details and assignment completion status

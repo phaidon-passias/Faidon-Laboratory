@@ -6,11 +6,13 @@
 - [📚 Documentation Architecture](#-documentation-architecture)
 - [1. GitOps Tool Selection: Flux CD vs ArgoCD](#1-gitops-tool-selection-flux-cd-vs-argocd)
 - [2. Configuration Management: Kustomize vs Helm](#2-configuration-management-kustomize-vs-helm)
-- [3. Cluster Architecture: Single Cluster vs Multiple Clusters](#3-cluster-architecture-single-cluster-vs-multiple-clusters)
-- [4. Kustomization Strategy: Base + Overlays](#4-kustomization-strategy-base--overlays)
-- [5. GitRepository and Top-Level Kustomization](#5-gitrepository-and-top-level-kustomization)
-- [6. Flux Bootstrap Challenges and Solutions](#6-flux-bootstrap-challenges-and-solutions)
-- [🎯 Conclusion](#-conclusion)
+- [3. Architecture: Single Cluster + 3 Namespaces vs 3 Separate Clusters](#3-architecture-single-cluster--3-namespaces-vs-3-separate-clusters)
+- [4. Kustomization Strategy & GitRepository Design](#4-kustomization-strategy--gitrepository-design)
+- [5. Label Standardization Strategy](#5-label-standardization-strategy)
+- [6. Kustomize Validation & Quality Assurance](#6-kustomize-validation--quality-assurance)
+- [7. Flux CD Bootstrap Process & Challenges](#7-flux-cd-bootstrap-process--challenges)
+- [8. Critical Analysis](#8-critical-analysis)
+- [9. Conclusion & Recommendations](#9-conclusion--recommendations)
 
 ## 🎯 Executive Summary
 
@@ -51,8 +53,7 @@ This structure eliminates redundancy while providing focused content for differe
 | **Learning Curve** | Steeper for beginners | Gentler with UI | ⚠️ Trade-off accepted |
 | **Community & Maturity** | Newer, growing community | Established, larger community | ⚠️ Trade-off accepted |
 
-### Lens of Truth Analysis
-*What would this look like if Flux CD were truly the better choice?*
+### What would this look like if Flux CD were truly the better choice?
 
 If Flux CD is genuinely superior for this use case, we'd see:
 - **Faster deployment cycles** due to simpler bootstrap
@@ -60,8 +61,7 @@ If Flux CD is genuinely superior for this use case, we'd see:
 - **More maintainable infrastructure** through pure declarative management
 - **Future-proof architecture** aligned with Kubernetes evolution
 
-### Lens of the Devil's Advocate
-*What's the strongest argument against choosing Flux CD?*
+### Implementation Strategy
 
 **Counter-arguments:**
 1. **Assignment Deviation**: We didn't follow the explicit ArgoCD requirement
@@ -90,8 +90,7 @@ If Flux CD is genuinely superior for this use case, we'd see:
 | **Maintenance** | Low overhead | Higher complexity | ✅ Kustomize for apps |
 | **Debugging** | Easy (plain YAML) | Complex (templated output) | ✅ Kustomize for apps |
 
-### Lens of Innovation
-*How can we apply unconventional methods to configuration management?*
+### Implementation Strategy
 
 **Unconventional Approach**: We used a **hybrid strategy**:
 - **Kustomize overlays** for environment-specific application configurations
@@ -152,8 +151,7 @@ This approach minimizes complexity while maximizing reusability.
 | **Development Speed** | Fast environment creation | Slower cluster provisioning | ✅ Single cluster - Faster demo |
 | **Cost** | Lower infrastructure cost | Higher infrastructure cost | ✅ Single cluster - "Lets not burn all the trees of the world" effective |
 
-### Lens of the Steel Man
-*What is the best argument for separate clusters?*
+### Implementation Strategy
 
 **Strong Arguments for 3 Clusters**:
 1. **True Isolation**: Complete separation prevents any cross-environment impact
@@ -236,10 +234,8 @@ patches:
         value: 50m                    # Dev: Low CPU
 ```
 
-### Lens of the Expert
-*What is an expert's experience with this approach?*
+### Implementation Strategy
 
-**Expert Perspective**:
 - **GitOps Best Practice**: Single repository with path-based organization is a proven pattern
 - **Kustomize Overlays**: Industry standard for multi-environment management
 - **DRY Principle**: Eliminates manifest duplication while maintaining environment-specific configurations
@@ -289,10 +285,6 @@ commonLabels:
   app.kubernetes.io/tier: development
 ```
 
-### Lens of the Expert
-*What is an expert's experience with label standardization?*
-
-**Expert Perspective**:
 - **Kubernetes Best Practice**: `app.kubernetes.io/*` labels are the recommended standard
 - **Tool Ecosystem**: Prometheus, Grafana, and other tools expect these labels
 - **Operational Excellence**: Consistent labeling enables better automation and monitoring
@@ -324,29 +316,10 @@ commonLabels:
 
 ### Implementation Strategy
 
-**Validation Toolchain**:
-```bash
-# Complete validation workflow
-make kustomize-check          # Structure + build + schema validation
-make kustomize-validate       # Schema validation with kubeconform
-make kustomize-build          # Build validation
-make kustomize-structure      # Structure analysis
-```
-
 **Integration Points**:
 - **Setup Process**: Validation runs automatically during `make setup-all` (step 4/7)
 - **CI/CD Ready**: Commands can be integrated into CI/CD pipelines
 - **Developer Workflow**: Immediate feedback on configuration errors
-
-### Lens of Innovation
-*How can we apply unconventional methods to validation?*
-
-**Unconventional Approach**: We implemented **complete tree validation** through the bootstrap kustomization:
-- **Bootstrap Validation**: Validates the entire deployment tree as Flux would see it
-- **Component Validation**: Individual validation of infrastructure and applications
-- **Automated Integration**: Validation runs automatically during setup
-
-This approach ensures that what we validate is exactly what gets deployed.
 
 ---
 
@@ -401,20 +374,9 @@ Flux automatically discovers and syncs all Kustomizations in the `flux-cd/` dire
 
 **Learning**: Hybrid approaches (Kustomize + Helm) work well when properly orchestrated.
 
-### Lens of Innovation
-*How can we apply unconventional methods to bootstrap challenges?*
-
-**Unconventional Solutions**:
-1. **Automated Bootstrap**: Created scripts that handle the entire local bootstrap process
-2. **Health Checks**: Implemented automated verification of Flux CD readiness
-3. **Progressive Deployment**: Deployed environments in dependency order (infrastructure → applications)
-4. **Self-Healing**: Leveraged Flux CD's reconciliation loops for automatic recovery
-
 ---
 
-## 8. Critical Analysis Using Multiple Lenses
-
-### Lens of Truth: What Would Success Look Like?
+## 8. Critical Analysis 
 
 If our decisions were truly optimal, we'd observe:
 - **Deployment Speed**: Sub-minute deployments across all environments
@@ -424,7 +386,7 @@ If our decisions were truly optimal, we'd observe:
 - **Reliability**: Self-healing deployments with automatic rollback capabilities
 - **CICD**: Semantic Versioning on Flux Sources so we could have separation between environment promotion on configuration changes. That would require a different handling of the resources (maybe adding an extra layer for commited changes) that would be an overkill for a demo.
 
-### Lens of Scalability: How Does This Scale?
+### Implementation Strategy
 
 **Current Scale (3 environment/5 apps)**:
 - ✅ Perfect fit for our architecture
@@ -441,7 +403,7 @@ If our decisions were truly optimal, we'd observe:
 - ❌ Might need more sophisticated templating (Helm)
 - ❌ Would require more complex GitOps orchestration
 
-### Lens of the Devil's Advocate: What Could Go Wrong?
+### What Could Go Wrong?
 
 **Potential Failure Modes**:
 1. **Single Point of Failure**: One cluster means one failure domain

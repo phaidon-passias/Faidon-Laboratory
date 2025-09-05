@@ -6,12 +6,7 @@ This guide provides step-by-step instructions for running the complete Kubernete
 
 - [🛠️ Prerequisites](#️-prerequisites)
 - [🚀 Quick Start](#-quick-start)
-- [📋 Detailed Steps](#-detailed-steps)
-- [🔍 Verification](#-verification)
-- [🧪 Testing](#-testing)
-- [📊 Monitoring Access](#-monitoring-access)
-- [🧹 Cleanup](#-cleanup)
-- [❓ Troubleshooting](#-troubleshooting)
+- [📋 Detailed Usage Guide](#-detailed-usage-guide)
 
 **📚 Related Documentation:**
 - **[README.md](../README.md)** - Technical implementation details and assignment completion status

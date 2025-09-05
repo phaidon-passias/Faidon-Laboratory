@@ -5,12 +5,15 @@ A production-ready Kubernetes deployment with GitOps automation, monitoring, and
 ## 📋 Table of Contents
 
 - [🎯 Assignment Completion](#-assignment-completion)
-- [🚀 Quick Start](#-quick-start)
 - [📚 Documentation](#-documentation)
-- [🏗️ Architecture](#️-architecture)
-- [🛠️ Prerequisites](#️-prerequisites)
-- [📋 Features Implemented](#-features-implemented)
-- [🎉 What's Included](#-whats-included)
+- [🏗️ Repository Structure](#️-repository-structure)
+- [🚀 Quick Reference](#-quick-reference)
+- [🏗️ Part 1 – Kubernetes and Application setup](#️-part-1--kubernetes-and-application-setup)
+- [🔄 GitOps](#-gitops)
+- [🔍 Verification & Evidence](#-verification--evidence)
+- [📊 Technical Implementation Summary](#-technical-implementation-summary)
+- [🎉 Assignment Completion Summary](#-assignment-completion-summary)
+- [🎯 Conclusion](#-conclusion)
 
 ## 🎯 Assignment Completion
 
