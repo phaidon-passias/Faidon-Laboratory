@@ -14,12 +14,18 @@ This document provides the technical implementation details, verification steps,
 - [how-to-run.MD](how-to-run.MD) - Step-by-step execution instructions
 - [scripts/SCRIPTS.md](scripts/SCRIPTS.md) - Detailed script documentation
 
-## Files Provided
+## General structure of repo provided
 
-- **`makefile`**: Complete automation for cluster management, application deployment, monitoring setup, and Flux CD GitOps
-- **`scripts/kind-three-node.yaml`**: Three-node cluster configuration (1 control-plane, 2 workers)
+- **`README.md`**: Starting point of documentation
+- **`makefile`**: Complete automation for cluster management, application deployment, monitoring setup, and Flux CD GitOps. Included wrappers for scripts etc.
 - **`scripts/`**: Comprehensive automation scripts for setup, testing, and teardown
+- **`app/`**: App python directory provided by kaiko (changed some metrics)
 - **`flux-cd/`**: Complete GitOps configuration with multi-environment setup
+- **`how-to-run`**: For the "I don't care about words, let me execute commands" person
+- **`design-decisions`**: 🤓A place for your inner reading child 🤓
+- **`screenshots/`**: Screenshots for documentation - Not to be read
+- **`_docsProvidedByKaikoUnchanged`**: A place to come back and cross check assignment details and completion status- Not altered at all- not to be read
+
 
 **See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed script documentation**
 
