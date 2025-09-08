@@ -16,7 +16,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 
 # Setup progress tracking
-SETUP_PROGRESS_FILE="/tmp/kaiko-setup-progress"
+SETUP_PROGRESS_FILE="/tmp/demo-app-python-setup-progress"
 STEP_COMPLETED="✅"
 STEP_SKIPPED="⏭️ "
 STEP_FAILED="❌"
@@ -184,7 +184,7 @@ if ! is_step_completed "step3-flux-bootstrap"; then
         echo "   ℹ️  Flux is already bootstrapped, skipping bootstrap..."
     else
         echo "   🚀 Bootstrapping Flux with Git repository..."
-        flux bootstrap git --url=ssh://git@github.com/phaidon-passias/kaiko-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
+        flux bootstrap git --url=ssh://git@github.com/phaidon-passias/demo-app-python-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
     fi
 
     echo "   ⏳ Waiting for Flux controllers to be ready..."

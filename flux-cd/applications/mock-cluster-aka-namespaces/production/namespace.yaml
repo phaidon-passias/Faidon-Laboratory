@@ -4,6 +4,6 @@ metadata:
   name: production
   labels:
     app.kubernetes.io/name: production
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/part-of: demo-app-python-assignment
     app.kubernetes.io/environment: production
     app.kubernetes.io/tier: application

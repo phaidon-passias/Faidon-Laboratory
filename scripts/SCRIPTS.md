@@ -1,6 +1,6 @@
 # Scripts Documentation
 
-This directory contains all automation scripts for the Kaiko Assignment Kubernetes and GitOps setup.
+This directory contains all automation scripts for the Demo App Python Kubernetes and GitOps setup.
 
 ## 📋 Table of Contents
 

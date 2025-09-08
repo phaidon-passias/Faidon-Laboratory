@@ -5,10 +5,10 @@ metadata:
   namespace: app
   labels:
     app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/part-of: demo-app-multi-language
 spec:
   minAvailable: 50%
   selector:
     matchLabels:
       app.kubernetes.io/name: app
-      app.kubernetes.io/part-of: kaiko-assignment
+      app.kubernetes.io/part-of: demo-app-multi-language

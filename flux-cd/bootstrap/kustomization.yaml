@@ -11,5 +11,5 @@ resources:
   - infrastructure.yaml
 
 commonLabels:
-  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/part-of: demo-app-python-assignment
   app.kubernetes.io/component: flux-bootstrap

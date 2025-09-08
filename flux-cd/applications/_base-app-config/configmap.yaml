@@ -1,11 +1,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: app-config
-  namespace: app
+  name: demo-app-config
   labels:
-    app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/name: demo-app
+    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/version: v1.0.0
+    app.kubernetes.io/component: application
+    app.kubernetes.io/managed-by: flux
 data:
-  FAIL_RATE: "0.02"
-  READINESS_DELAY_SEC: "60"
+  fail_rate: "0.02"
+  readiness_delay_sec: "10"

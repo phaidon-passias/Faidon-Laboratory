@@ -4,6 +4,6 @@ metadata:
   name: staging
   labels:
     app.kubernetes.io/name: staging
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/part-of: demo-app-python-assignment
     app.kubernetes.io/environment: staging
     app.kubernetes.io/tier: application

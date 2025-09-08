@@ -11,7 +11,7 @@ resources:
 
 commonLabels:
   app.kubernetes.io/name: kube-prometheus-stack
-  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/part-of: demo-app-python-assignment
   app.kubernetes.io/component: infrastructure
   app.kubernetes.io/version: v55.5.0
   app.kubernetes.io/managed-by: flux

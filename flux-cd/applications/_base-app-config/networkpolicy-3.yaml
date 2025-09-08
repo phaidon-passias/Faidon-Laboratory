@@ -5,12 +5,12 @@ metadata:
   namespace: app
   labels:
     app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/part-of: demo-app-multi-language
 spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/name: app
-      app.kubernetes.io/part-of: kaiko-assignment
+      app.kubernetes.io/part-of: demo-app-multi-language
   policyTypes:
     - Ingress
   ingress:

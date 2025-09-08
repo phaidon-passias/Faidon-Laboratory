@@ -1,4 +1,4 @@
-# Kaiko Assignment - Kubernetes & GitOps Solution
+# Demo App Python - Kubernetes & GitOps Solution
 
 A production-ready Kubernetes deployment with GitOps automation, monitoring, and multi-environment management.
 
@@ -26,6 +26,8 @@ A production-ready Kubernetes deployment with GitOps automation, monitoring, and
 - **[how-to-run.MD](how-to-run.MD)** - Step-by-step execution instructions and user guide
 - **[design-decisions.md](design-decisions.md)** - Architectural decisions and trade-offs
 - **[scripts/SCRIPTS.md](scripts/SCRIPTS.md)** - Detailed script documentation and technical reference
+- **[EMPLOYER-PRESENTATION.md](EMPLOYER-PRESENTATION.md)** - Professional portfolio presentation for employers
+- **[FUTURE-ROADMAP.md](FUTURE-ROADMAP.md)** - Detailed enhancement plan and implementation roadmap
 
 ## Repository Structure
 
@@ -33,9 +35,11 @@ A production-ready Kubernetes deployment with GitOps automation, monitoring, and
 - **`how-to-run.MD`**: Step-by-step execution instructions and user guide
 - **`design-decisions.md`**: Architectural decisions and trade-offs analysis
 - **`scripts/SCRIPTS.md`**: Detailed script documentation and technical reference
+- **`EMPLOYER-PRESENTATION.md`**: Professional portfolio presentation for employers
+- **`FUTURE-ROADMAP.md`**: Detailed enhancement plan and implementation roadmap
 - **`makefile`**: Complete automation for cluster management and GitOps
 - **`scripts/`**: Automation scripts for setup, testing, and teardown
-- **`app/`**: Python application with enhanced metrics
+- **`app-python/`**: Python application with enhanced metrics
 - **`flux-cd/`**: Complete GitOps configuration with multi-environment setup
 - **`screenshots/`**: Documentation screenshots and verification evidence
 - **`_docsProvidedByKaikoUnchanged/`**: Original assignment documentation (unchanged)
@@ -139,7 +143,7 @@ I added some code to help with reporting also successful requests. Now all reque
 
 If the problem statement behind the decision of reporting only the failed requests would be "Hey Faidon just let me monitor the service" then i'd suggest filter or drop a percentage of the successful requests in your OTEL Collector or your backend. not the service (unless you do it via OTEL instrumentation/clearly see what is happening in env variables...parsing 5k lines of code is not something we enjoy). 
 
-I'd revert the changes if its a dev only application and we don't care about further analysis or if we have a storage issue (from our last interview Robert noted that the biggest "cost-issue" kaiko is facing is storage. I'd have to do an analysis on whether this service is critical enough...)(on the other hand prometheus is very efficient in storage, i wouldn't consider it a problem)
+I'd revert the changes if its a dev only application and we don't care about further analysis or if we have a storage issue (from our last interview Robert noted that the biggest "cost-issue" demo-app-python is facing is storage. I'd have to do an analysis on whether this service is critical enough...)(on the other hand prometheus is very efficient in storage, i wouldn't consider it a problem)
 
 Theoretically it would skew our metrics because 
 `Previously broken behavior`:

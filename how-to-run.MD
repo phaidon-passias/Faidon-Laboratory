@@ -1,6 +1,6 @@
-# How to Run the Kaiko Assignment
+# How to Run the Demo App Python Assignment
 
-This guide provides step-by-step instructions for running the complete Kubernetes and GitOps solution for the Kaiko Assignment.
+This guide provides step-by-step instructions for running the complete Kubernetes and GitOps solution for the Demo App Python Assignment.
 
 ## 📋 Table of Contents
 

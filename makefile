@@ -5,7 +5,7 @@ WHITE = \033[1;38;5;231m
 # ------------------------------
 # Configurable variables (override via: make CLUSTER_NAME=mycluster)
 # ------------------------------
-CLUSTER_NAME ?= kaiko-lab
+CLUSTER_NAME ?= demo-app-python-lab
 K8S_VERSION ?= v1.29.2
 KIND_NODE_IMAGE ?= kindest/node:$(K8S_VERSION)
 KIND ?= kind
@@ -314,7 +314,7 @@ deploy-everything: build-and-push-services deploy-via-flux ## Complete workflow:
 cluster-status: ## Check overall cluster and Flux status
 	@echo "🔍 Cluster Status:"
 	@echo "=================="
-	@kubectl cluster-info --context kind-kaiko-lab 2>/dev/null || echo "❌ Not connected to kaiko-lab cluster"
+	@kubectl cluster-info --context kind-demo-app-python-lab 2>/dev/null || echo "❌ Not connected to demo-app-python-lab cluster"
 	@echo ""
 	@echo "📊 Flux Status:"
 	@echo "==============="
@@ -363,7 +363,7 @@ deploy-production: ## Deploy production environment via GitOps (legacy - use dep
 
 # GitHub Configuration (override these values)
 GITHUB_USER ?= phaidon-passias
-GITHUB_REPO ?= kaiko-assignment
+GITHUB_REPO ?= demo-app-python-assignment
 
 use-context: check-deps ## Switch kubectl context to this cluster
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)
@@ -373,7 +373,7 @@ start-cluster: create-cluster start-docker-registry use-context install-metrics-
 stop-cluster: stop-docker-registry delete-cluster  ## Delete cluster and stop docker registry
 
 ## build service docker image and push to local registry
-build-and-push-services: app-build app-push
+build-and-push-services: python-build python-push go-build go-push
 
 start-docker-registry:
 	@echo "${GREEN}Start local docker registry:${RESET}\n"
@@ -392,15 +392,34 @@ stop-docker-registry:
 	@docker stop kind-registry
 	@docker rm kind-registry
 
-## Build app docker image
-app-build:
-	@echo "${GREEN}Building app docker image:${RESET}\n"
-	@cd app && docker build -t localhost:5000/app .
+## Build Python app docker image
+python-build:
+	@echo "${GREEN}Building Python app docker image:${RESET}\n"
+	@cd app-python && docker build -t localhost:5000/demo-app-python:latest .
 
-## Push app docker image to local registry
-app-push:
-	@echo "${GREEN}Pushing app docker image to local registry:${RESET}\n"
-	@docker push localhost:5000/app
+## Push Python app docker image to local registry
+python-push:
+	@echo "${GREEN}Pushing Python app docker image to local registry:${RESET}\n"
+	@docker push localhost:5000/demo-app-python:latest
+
+## Build Go app docker image
+go-build:
+	@echo "${GREEN}Building Go app docker image:${RESET}\n"
+	@cd app-go && docker build -t localhost:5000/demo-app-go:latest .
+
+## Push Go app docker image to local registry
+go-push:
+	@echo "${GREEN}Pushing Go app docker image to local registry:${RESET}\n"
+	@docker push localhost:5000/demo-app-go:latest
+
+## Legacy targets for backward compatibility
+app-build: python-build
+app-push: python-push
+
+## Individual app build targets
+build-python: python-build python-push ## Build and push only Python app
+build-go: go-build go-push ## Build and push only Go app
+build-both: build-and-push-services ## Build and push both Python and Go apps
 
 current-context: ## Show current kubectl context
 	@$(KUBECTL) config current-context

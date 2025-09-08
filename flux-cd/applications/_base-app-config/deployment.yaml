@@ -1,17 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
-  namespace: app
+  name: demo-app
   labels:
-    app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/name: demo-app
+    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/version: v1.0.0
+    app.kubernetes.io/component: application
+    app.kubernetes.io/managed-by: flux
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app.kubernetes.io/name: app
-      app.kubernetes.io/part-of: kaiko-assignment
+      app.kubernetes.io/name: demo-app
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -21,8 +22,11 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: app
-        app.kubernetes.io/part-of: kaiko-assignment
+        app.kubernetes.io/name: demo-app
+        app.kubernetes.io/part-of: demo-app-multi-language
+        app.kubernetes.io/version: v1.0.0
+        app.kubernetes.io/component: application
+        app.kubernetes.io/managed-by: flux
     spec:
       terminationGracePeriodSeconds: 30
       affinity:
@@ -38,8 +42,7 @@ spec:
             podAffinityTerm:
               labelSelector:
                 matchLabels:
-                  app.kubernetes.io/name: app
-                  app.kubernetes.io/part-of: kaiko-assignment
+                  app.kubernetes.io/name: demo-app
               topologyKey: kubernetes.io/hostname
       topologySpreadConstraints:
       - maxSkew: 1
@@ -47,9 +50,8 @@ spec:
         whenUnsatisfiable: ScheduleAnyway
         labelSelector:
           matchLabels:
-            app.kubernetes.io/name: app
-            app.kubernetes.io/part-of: kaiko-assignment
-      serviceAccountName: app-sa
+            app.kubernetes.io/name: demo-app
+      serviceAccountName: demo-app
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -57,8 +59,8 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: app
-          image: localhost:5000/app:latest
+        - name: demo-app
+          image: demo-app:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -67,18 +69,18 @@ spec:
             - name: GREETING
               valueFrom:
                 secretKeyRef:
-                  name: app-secret
-                  key: GREETING
+                  name: demo-app-secret
+                  key: greeting
             - name: FAIL_RATE
               valueFrom:
                 configMapKeyRef:
-                  name: app-config
-                  key: FAIL_RATE
+                  name: demo-app-config
+                  key: fail_rate
             - name: READINESS_DELAY_SEC
               valueFrom:
                 configMapKeyRef:
-                  name: app-config
-                  key: READINESS_DELAY_SEC
+                  name: demo-app-config
+                  key: readiness_delay_sec
           startupProbe:
             httpGet:
               path: /healthz

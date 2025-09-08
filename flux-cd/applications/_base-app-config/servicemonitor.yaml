@@ -4,7 +4,7 @@ metadata:
   name: app-monitor
   labels:
     app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/part-of: demo-app-multi-language
     app.kubernetes.io/component: application
     app.kubernetes.io/version: v1.0.0
     # This label is important - Prometheus looks for ServiceMonitors with this label
@@ -13,7 +13,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: app
-      app.kubernetes.io/part-of: kaiko-assignment
+      app.kubernetes.io/part-of: demo-app-multi-language
   endpoints:
   - port: http
     path: /metrics

@@ -23,16 +23,6 @@ This document outlines the key architectural decisions made during the implement
 - **[how-to-run.MD](how-to-run.MD)** - Step-by-step execution instructions and user guide
 - **[scripts/SCRIPTS.md](scripts/SCRIPTS.md)** - Detailed script documentation and technical reference
 
-## Documentation Architecture
-
-This project follows a structured documentation approach with clear separation of concerns:
-
-- **README.md**: Technical implementation & assignment completion status
-- **how-to-run.MD**: Primary user guide with step-by-step instructions
-- **design-decisions.md**: Architectural decisions and trade-offs analysis
-- **scripts/SCRIPTS.md**: Technical reference and script documentation
-
-This structure eliminates redundancy while providing focused content for different audiences and use cases.
 
 ---
 
@@ -203,7 +193,7 @@ resources:
 
 commonLabels:
   app.kubernetes.io/name: app
-  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/part-of: demo-app-python-assignment
   app.kubernetes.io/version: v1.0.0
   app.kubernetes.io/component: application
   app.kubernetes.io/managed-by: flux
@@ -272,7 +262,7 @@ patches:
 ```yaml
 commonLabels:
   app.kubernetes.io/name: app
-  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/part-of: demo-app-python-assignment
   app.kubernetes.io/version: v1.0.0
   app.kubernetes.io/component: application
   app.kubernetes.io/managed-by: flux
@@ -335,7 +325,7 @@ flux install --version=v2.6.4
 **Step 2: Git Bootstrap**
 ```bash
 flux bootstrap git \
-  --url=ssh://git@github.com/phaidon-passias/kaiko-assignment \
+  --url=ssh://git@github.com/phaidon-passias/demo-app-python-assignment \
   --branch=main \
   --path=flux-cd/bootstrap
 ```

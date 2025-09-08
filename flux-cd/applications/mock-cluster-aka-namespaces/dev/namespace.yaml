@@ -4,6 +4,6 @@ metadata:
   name: dev
   labels:
     app.kubernetes.io/name: dev
-    app.kubernetes.io/part-of: kaiko-assignment
+    app.kubernetes.io/part-of: demo-app-python-assignment
     app.kubernetes.io/environment: development
     app.kubernetes.io/tier: application

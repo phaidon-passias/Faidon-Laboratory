@@ -9,6 +9,6 @@ resources:
 
 commonLabels:
   app.kubernetes.io/name: mock-cluster-namespaces
-  app.kubernetes.io/part-of: kaiko-assignment
+  app.kubernetes.io/part-of: demo-app-python-assignment
   app.kubernetes.io/component: infrastructure
   app.kubernetes.io/managed-by: flux
