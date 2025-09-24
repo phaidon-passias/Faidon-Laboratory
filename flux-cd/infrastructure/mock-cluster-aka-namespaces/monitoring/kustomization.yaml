@@ -9,6 +9,7 @@ namespace: monitoring
 resources:
   - namespace.yaml
   - ../../_components/_prometheus-stack
+  - ../../_components/_alloy
 
 commonLabels:
   app.kubernetes.io/name: monitoring
