@@ -9,6 +9,8 @@ resources:
 
 namespace: dev
 
+namePrefix: go-
+
 commonLabels:
   app.kubernetes.io/environment: development
   app.kubernetes.io/tier: development
