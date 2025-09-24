@@ -1,0 +1,40 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: grafana-alloy
+  namespace: monitoring
+spec:
+  interval: 5m0s
+  chart:
+    spec:
+      chart: alloy
+      version: "0.12.1"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+  values:
+    controller:
+      type: deployment
+      replicas: 1
+    image:
+      tag: "v1.5.1"
+    alloy:
+      resources:
+        limits:
+          memory: 512Mi
+        requests:
+          cpu: "100m"
+          memory: 256Mi
+      enableReporting: false
+      extraPorts:
+        - name: "grpc-otlp"
+          port: 4317
+          targetPort: 4317
+          protocol: "TCP"
+        - name: "http-otlp"
+          port: 4318
+          targetPort: 4318
+          protocol: "TCP"
+      configMap:
+        name: alloy-config

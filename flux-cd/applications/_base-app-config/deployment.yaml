@@ -81,6 +81,27 @@ spec:
                 configMapKeyRef:
                   name: demo-app-config
                   key: readiness_delay_sec
+            # OpenTelemetry Configuration
+            - name: SERVICE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: demo-app-config
+                  key: service_name
+            - name: SERVICE_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: demo-app-config
+                  key: service_version
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: demo-app-config
+                  key: environment
+            - name: ALLOY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: demo-app-config
+                  key: alloy_url
           startupProbe:
             httpGet:
               path: /healthz

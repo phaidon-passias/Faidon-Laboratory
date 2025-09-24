@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: monitoring
+data:
+  config.alloy: |
+    // Basic Alloy configuration for OpenTelemetry
+    logging {
+      level = "info"
+      format = "logfmt"
+    }
+
+    // OTLP receiver - this is where your apps will send data
+    otelcol.receiver.otlp "default" {
+      grpc {
+        endpoint = "0.0.0.0:4317"
+      }
+      http {
+        endpoint = "0.0.0.0:4318"
+      }
+      
+      output {
+        metrics = [otelcol.processor.resource.add_labels.input]
+        logs    = [otelcol.processor.resource.add_labels.input]
+        traces  = [otelcol.processor.resource.add_labels.input]
+      }
+    }
+
+    // Resource processor - adds labels to all metrics
+    otelcol.processor.resource "add_labels" {
+      attributes {
+        // Add cluster information
+        key = "cluster_name"
+        value = "kind-cluster"
+        action = "upsert"
+      }
+      
+      attributes {
+        // Add environment information
+        key = "environment"
+        value = "development"
+        action = "upsert"
+      }
+      
+      attributes {
+        // Add collector information
+        key = "collector"
+        value = "alloy"
+        action = "upsert"
+      }
+      
+      output {
+        metrics = [otelcol.processor.batch.default.input]
+        logs    = [otelcol.processor.batch.default.input]
+        traces  = [otelcol.processor.batch.default.input]
+      }
+    }
+
+    // Batch processor - groups data for efficiency
+    otelcol.processor.batch "default" {
+      output {
+        metrics = [prometheus.remote_write.prometheus.receiver]
+        logs    = [loki.write.default.receiver]
+        traces  = [otelcol.exporter.otlp.tempo.receiver]
+      }
+    }
+
+    // Export metrics to your existing Prometheus
+    prometheus.remote_write "prometheus" {
+      endpoint {
+        url = "http://kube-prometheus-stack-prometheus:9090/api/v1/write"
+      }
+    }
+
+    // Export logs to Loki (future)
+    loki.write "default" {
+      endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+      }
+    }
+
+    // Export traces to Tempo (future)
+    otelcol.exporter.otlp "tempo" {
+      client {
+        endpoint = "http://tempo:3200"
+        tls {
+          insecure = true
+        }
+      }
+    }
+
+    // OTLP-only approach - no Prometheus scraping
+    // Your apps will send metrics directly via OTLP to ports 4317/4318

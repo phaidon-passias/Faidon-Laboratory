@@ -11,3 +11,8 @@ metadata:
 data:
   fail_rate: "0.02"
   readiness_delay_sec: "10"
+  # OpenTelemetry Configuration (base values)
+  service_name: "demo-app-go"
+  service_version: "1.0.0"
+  environment: "development"
+  alloy_url: "grafana-alloy:4318"
