@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 metadata:
-  name: demo-app-base
+  name: APP_NAME-base
 
 resources:
   - deployment.yaml
@@ -11,21 +11,23 @@ resources:
   - configmap.yaml
   - secret.yaml
   - poddisruptionbudget.yaml
-  - networkpolicy-1.yaml
-  - networkpolicy-2.yaml
-  - networkpolicy-3.yaml
-  - networkpolicy-4.yaml
+  # App-specific network policies (each app gets its own)
+  - networkpolicy-1.yaml  # allow-from-same-namespace
+  - networkpolicy-2.yaml  # allow-from-monitoring-namespace
   - horizontalpodautoscaler.yaml
   - role.yaml
   - rolebinding.yaml
   - servicemonitor.yaml
 
-commonLabels:
-  app.kubernetes.io/name: demo-app
-  app.kubernetes.io/part-of: demo-app-multi-language
-  app.kubernetes.io/version: v1.0.0
-  app.kubernetes.io/component: application
-  app.kubernetes.io/managed-by: flux
+labels:
+  - includeSelectors: true
+    includeTemplates: true
+    pairs:
+      app.kubernetes.io/name: APP_NAME
+      app.kubernetes.io/part-of: APP_NAME-multi-language
+      app.kubernetes.io/version: v1.0.0
+      app.kubernetes.io/component: application
+      app.kubernetes.io/managed-by: flux
 
 # This base config will be transformed by environment-specific kustomizations
 # to set the appropriate namespace and resource allocations

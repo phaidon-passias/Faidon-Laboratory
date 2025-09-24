@@ -1,8 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: app-read-config
-  namespace: app
+  name: APP_NAME-read-config
 rules:
 - apiGroups: [""]
   resources: ["configmaps", "secrets"]

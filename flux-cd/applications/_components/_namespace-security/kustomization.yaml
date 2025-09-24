@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+metadata:
+  name: namespace-security
+
+resources:
+  - default-deny-all.yaml
+  - allow-dns-egress.yaml
+
+labels:
+  - includeSelectors: true
+    includeTemplates: true
+    pairs:
+      app.kubernetes.io/component: network-policy
+      app.kubernetes.io/part-of: namespace-security
+      app.kubernetes.io/managed-by: flux
+
+# This component provides namespace-level security policies
+# that should be applied once per namespace, not per application

@@ -1,10 +1,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: app-monitor
+  name: APP_NAME-monitor
   labels:
-    app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/name: APP_NAME
+    app.kubernetes.io/part-of: APP_NAME-multi-language
     app.kubernetes.io/component: application
     app.kubernetes.io/version: v1.0.0
     # This label is important - Prometheus looks for ServiceMonitors with this label
@@ -12,8 +12,8 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: app
-      app.kubernetes.io/part-of: demo-app-multi-language
+      app.kubernetes.io/name: APP_NAME
+      app.kubernetes.io/part-of: APP_NAME-multi-language
   endpoints:
   - port: http
     path: /metrics

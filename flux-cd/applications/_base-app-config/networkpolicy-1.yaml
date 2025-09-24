@@ -1,13 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: default-deny-all
-  namespace: app
+  name: APP_NAME-allow-from-same-namespace
   labels:
-    app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/name: APP_NAME
+    app.kubernetes.io/part-of: APP_NAME-multi-language
 spec:
-  podSelector: {}
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: APP_NAME
+      app.kubernetes.io/part-of: APP_NAME-multi-language
   policyTypes:
     - Ingress
-    - Egress
+  ingress:
+    - from:
+        - podSelector: {}

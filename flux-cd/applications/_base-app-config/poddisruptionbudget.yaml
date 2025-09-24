@@ -1,14 +1,13 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: app-pdb
-  namespace: app
+  name: APP_NAME-pdb
   labels:
-    app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/name: APP_NAME
+    app.kubernetes.io/part-of: APP_NAME-multi-language
 spec:
   minAvailable: 50%
   selector:
     matchLabels:
-      app.kubernetes.io/name: app
-      app.kubernetes.io/part-of: demo-app-multi-language
+      app.kubernetes.io/name: APP_NAME
+      app.kubernetes.io/part-of: APP_NAME-multi-language

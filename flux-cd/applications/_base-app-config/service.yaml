@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-app
+  name: APP_NAME
   labels:
-    app.kubernetes.io/name: demo-app
-    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/name: APP_NAME
+    app.kubernetes.io/part-of: APP_NAME-multi-language
     app.kubernetes.io/version: v1.0.0
     app.kubernetes.io/component: application
     app.kubernetes.io/managed-by: flux
@@ -16,7 +16,7 @@ metadata:
     prometheus.io/scheme: "http"
 spec:
   selector:
-    app.kubernetes.io/name: demo-app
+    app.kubernetes.io/name: APP_NAME
   ports:
     - name: http
       port: 80

@@ -6,5 +6,10 @@ metadata:
 
 resources:
   - namespace.yaml
+  # Application-specific resources
   - python/
   - go/
+
+components:
+  # Namespace-level security policies (applied once per namespace)
+  - ../../_components/_namespace-security

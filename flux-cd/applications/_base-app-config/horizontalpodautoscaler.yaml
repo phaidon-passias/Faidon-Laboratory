@@ -1,16 +1,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: app
-  namespace: app
+  name: APP_NAME-hpa
   labels:
-    app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/name: APP_NAME
+    app.kubernetes.io/part-of: APP_NAME-multi-language
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: app
+    name: APP_NAME
   minReplicas: 2
   maxReplicas: 5
   metrics:

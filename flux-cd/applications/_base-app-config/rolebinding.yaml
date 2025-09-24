@@ -1,13 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: app-read-config-binding
-  namespace: app
+  name: APP_NAME-read-config-binding
 subjects:
 - kind: ServiceAccount
-  name: app-sa
-  namespace: app
+  name: APP_NAME
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: app-read-config
+  name: APP_NAME-read-config

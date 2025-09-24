@@ -2,10 +2,9 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-dns-egress
-  namespace: app
   labels:
-    app.kubernetes.io/name: app
-    app.kubernetes.io/part-of: demo-app-multi-language
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/part-of: namespace-security
 spec:
   podSelector: {}
   policyTypes: [Egress]

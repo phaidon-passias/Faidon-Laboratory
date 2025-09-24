@@ -9,21 +9,73 @@ resources:
 
 namespace: dev
 
-namePrefix: go-
-
-commonLabels:
-  app.kubernetes.io/environment: development
-  app.kubernetes.io/tier: development
-  app.kubernetes.io/implementation: go
+labels:
+  - includeSelectors: true
+    includeTemplates: true
+    pairs:
+      app.kubernetes.io/environment: development
+      app.kubernetes.io/tier: development
+      app.kubernetes.io/implementation: go
 
 patches:
   - target:
       kind: Deployment
-      name: demo-app
+      name: APP_NAME
     patch: |-
       - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/template/metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/template/metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/template/spec/affinity/podAntiAffinity/preferredDuringSchedulingIgnoredDuringExecution/0/podAffinityTerm/labelSelector/matchLabels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/template/spec/topologySpreadConstraints/0/labelSelector/matchLabels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/template/spec/serviceAccountName
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/template/spec/containers/0/name
+        value: demo-app-go-dev
+      - op: replace
         path: /spec/template/spec/containers/0/image
-        value: demo-app-go:latest
+        value: demo-app-go-dev:latest
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
+        value: demo-app-go-dev-secret
+      - op: replace
+        path: /spec/template/spec/containers/0/env/1/valueFrom/configMapKeyRef/name
+        value: demo-app-go-dev-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/2/valueFrom/configMapKeyRef/name
+        value: demo-app-go-dev-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/3/valueFrom/configMapKeyRef/name
+        value: demo-app-go-dev-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/4/valueFrom/configMapKeyRef/name
+        value: demo-app-go-dev-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/5/valueFrom/configMapKeyRef/name
+        value: demo-app-go-dev-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/6/valueFrom/configMapKeyRef/name
+        value: demo-app-go-dev-config
       - op: replace
         path: /spec/replicas
         value: 1
@@ -41,8 +93,11 @@ patches:
         value: 64Mi
   - target:
       kind: ConfigMap
-      name: demo-app-config
+      name: APP_NAME-config
     patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-config
       - op: replace
         path: /data/environment
         value: development
@@ -52,3 +107,157 @@ patches:
       - op: replace
         path: /data/service_version
         value: 1.0.0-dev
+  - target:
+      kind: ServiceAccount
+      name: APP_NAME
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+  - target:
+      kind: Secret
+      name: APP_NAME-secret
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-secret
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+  - target:
+      kind: Service
+      name: APP_NAME
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/selector/app.kubernetes.io~1name
+        value: demo-app-go-dev
+  - target:
+      kind: PodDisruptionBudget
+      name: APP_NAME-pdb
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-pdb
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: APP_NAME-hpa
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-hpa
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/scaleTargetRef/name
+        value: demo-app-go-dev
+  - target:
+      kind: ServiceMonitor
+      name: APP_NAME-monitor
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-monitor
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+  - target:
+      kind: Role
+      name: APP_NAME-read-config
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-read-config
+  - target:
+      kind: RoleBinding
+      name: APP_NAME-read-config-binding
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-read-config-binding
+      - op: replace
+        path: /subjects/0/name
+        value: demo-app-go-dev
+      - op: replace
+        path: /roleRef/name
+        value: demo-app-go-dev-read-config
+  - target:
+      kind: NetworkPolicy
+      name: APP_NAME-allow-from-same-namespace
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-allow-from-same-namespace
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/podSelector/matchLabels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/podSelector/matchLabels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+  - target:
+      kind: NetworkPolicy
+      name: APP_NAME-allow-from-monitoring-namespace
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: demo-app-go-dev-allow-from-monitoring-namespace
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
+      - op: replace
+        path: /spec/podSelector/matchLabels/app.kubernetes.io~1name
+        value: demo-app-go-dev
+      - op: replace
+        path: /spec/podSelector/matchLabels/app.kubernetes.io~1part-of
+        value: demo-app-go-dev-multi-language
