@@ -363,7 +363,7 @@ deploy-production: ## Deploy production environment via GitOps (legacy - use dep
 
 # GitHub Configuration (override these values)
 GITHUB_USER ?= phaidon-passias
-GITHUB_REPO ?= demo-app-python-assignment
+GITHUB_REPO ?= kaiko-assignment
 
 use-context: check-deps ## Switch kubectl context to this cluster
 	@$(KUBECTL) config use-context $(KUBE_CONTEXT)

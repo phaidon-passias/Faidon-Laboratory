@@ -184,7 +184,7 @@ if ! is_step_completed "step3-flux-bootstrap"; then
         echo "   ℹ️  Flux is already bootstrapped, skipping bootstrap..."
     else
         echo "   🚀 Bootstrapping Flux with Git repository..."
-        flux bootstrap git --url=ssh://git@github.com/phaidon-passias/demo-app-python-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
+        flux bootstrap git --url=ssh://git@github.com/phaidon-passias/kaiko-assignment --branch=main --path=flux-cd/bootstrap --namespace=flux-system
     fi
 
     echo "   ⏳ Waiting for Flux controllers to be ready..."
