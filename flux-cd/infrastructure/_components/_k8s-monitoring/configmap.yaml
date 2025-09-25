@@ -127,3 +127,10 @@ data:
     # Kube state metrics
     kubeStateMetrics:
       enabled: true
+
+    # Collectors (Alloy instances)
+    alloy-metrics:
+      enabled: true
+
+    alloy-singleton:
+      enabled: true
