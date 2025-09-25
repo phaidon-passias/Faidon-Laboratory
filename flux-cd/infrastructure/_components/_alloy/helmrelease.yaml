@@ -36,5 +36,9 @@ spec:
           port: 4318
           targetPort: 4318
           protocol: "TCP"
+        - name: "prometheus-metrics"
+          port: 8889
+          targetPort: 8889
+          protocol: "TCP"
       configMap:
         name: alloy-config
