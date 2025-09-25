@@ -8,7 +8,7 @@ namespace: monitoring
 
 resources:
   - namespace.yaml
-  - ../../_components/_prometheus-stack
+  - ../../_components/_k8s-monitoring
   - ../../_components/_alloy
 
 commonLabels:
