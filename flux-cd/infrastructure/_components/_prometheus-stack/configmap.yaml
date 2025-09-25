@@ -27,6 +27,9 @@ data:
         serviceMonitorSelectorNilUsesHelmValues: false
         serviceMonitorSelector: {}
         serviceMonitorNamespaceSelector: {}
+        # Enable remote write receiver for Alloy
+        extraArgs:
+          - --web.enable-remote-write-receiver
 
     grafana:
       adminPassword: admin
