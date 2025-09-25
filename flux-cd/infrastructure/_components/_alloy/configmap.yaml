@@ -21,15 +21,15 @@ data:
       }
       
       output {
-        metrics = [otelcol.processor.resourcedetection.k8s_detection.input]
-        logs    = [otelcol.processor.resourcedetection.k8s_detection.input]
-        traces  = [otelcol.processor.resourcedetection.k8s_detection.input]
+        metrics = [otelcol.processor.resourcedetection.basic_detection.input]
+        logs    = [otelcol.processor.resourcedetection.basic_detection.input]
+        traces  = [otelcol.processor.resourcedetection.basic_detection.input]
       }
     }
 
-    // Step 1: Detect Kubernetes resource attributes (including namespace)
-    otelcol.processor.resourcedetection "k8s_detection" {
-      detectors = ["env", "system", "k8s"]
+    // Step 1: Detect basic resource attributes
+    otelcol.processor.resourcedetection "basic_detection" {
+      detectors = ["env", "system"]
       
       output {
         metrics = [otelcol.processor.transform.namespace_to_env.input]
@@ -79,9 +79,9 @@ data:
     // Batch processor - groups data for efficiency
     otelcol.processor.batch "default" {
       output {
-        metrics = [prometheus.remote_write.prometheus]
-        logs    = [loki.write.default]
-        traces  = [otelcol.exporter.otlp.tempo]
+        metrics = [prometheus.remote_write.prometheus.receiver]
+        logs    = [loki.write.default.receiver]
+        traces  = [otelcol.exporter.otlp.tempo.receiver]
       }
     }
 
