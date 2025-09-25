@@ -54,7 +54,7 @@ patches:
         value: demo-app-go-production
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: demo-app-go-production:latest
+        value: demo-app-go:latest
       - op: replace
         path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
         value: demo-app-go-production-secret
