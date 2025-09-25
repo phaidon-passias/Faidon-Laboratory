@@ -4,6 +4,8 @@ kind: Kustomization
 metadata:
   name: dev-environment
 
+namespace: dev
+
 resources:
   - namespace.yaml
   # Application-specific resources

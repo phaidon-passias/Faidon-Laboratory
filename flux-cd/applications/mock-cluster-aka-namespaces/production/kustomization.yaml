@@ -4,6 +4,8 @@ kind: Kustomization
 metadata:
   name: production-environment
 
+namespace: production
+
 resources:
   - namespace.yaml
   # Application-specific resources
