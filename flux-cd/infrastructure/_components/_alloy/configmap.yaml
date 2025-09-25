@@ -29,7 +29,7 @@ data:
 
     // Step 1: Detect Kubernetes resource attributes (including namespace)
     otelcol.processor.resourcedetection "k8s_detection" {
-      detectors = ["env", "system", "k8snode", "k8s"]
+      detectors = ["env", "system", "k8s"]
       
       output {
         metrics = [otelcol.processor.transform.namespace_to_env.input]
@@ -42,23 +42,32 @@ data:
     otelcol.processor.transform "namespace_to_env" {
       error_mode = "ignore"
       
-      metric_statements = [
-        "set(resource.attributes[\"environment\"], resource.attributes[\"k8s.namespace.name\"]) where resource.attributes[\"k8s.namespace.name\"] != nil",
-        "set(resource.attributes[\"cluster_name\"], \"kind-cluster\") where true",
-        "set(resource.attributes[\"collector\"], \"alloy\") where true",
-      ]
+      metric_statements {
+        context = "resource"
+        statements = [
+          "set(attributes[\"environment\"], attributes[\"k8s.namespace.name\"]) where attributes[\"k8s.namespace.name\"] != nil",
+          "set(attributes[\"cluster_name\"], \"kind-cluster\") where true",
+          "set(attributes[\"collector\"], \"alloy\") where true",
+        ]
+      }
       
-      log_statements = [
-        "set(resource.attributes[\"environment\"], resource.attributes[\"k8s.namespace.name\"]) where resource.attributes[\"k8s.namespace.name\"] != nil",
-        "set(resource.attributes[\"cluster_name\"], \"kind-cluster\") where true", 
-        "set(resource.attributes[\"collector\"], \"alloy\") where true",
-      ]
+      log_statements {
+        context = "resource"
+        statements = [
+          "set(attributes[\"environment\"], attributes[\"k8s.namespace.name\"]) where attributes[\"k8s.namespace.name\"] != nil",
+          "set(attributes[\"cluster_name\"], \"kind-cluster\") where true", 
+          "set(attributes[\"collector\"], \"alloy\") where true",
+        ]
+      }
       
-      trace_statements = [
-        "set(resource.attributes[\"environment\"], resource.attributes[\"k8s.namespace.name\"]) where resource.attributes[\"k8s.namespace.name\"] != nil",
-        "set(resource.attributes[\"cluster_name\"], \"kind-cluster\") where true",
-        "set(resource.attributes[\"collector\"], \"alloy\") where true", 
-      ]
+      trace_statements {
+        context = "resource"
+        statements = [
+          "set(attributes[\"environment\"], attributes[\"k8s.namespace.name\"]) where attributes[\"k8s.namespace.name\"] != nil",
+          "set(attributes[\"cluster_name\"], \"kind-cluster\") where true",
+          "set(attributes[\"collector\"], \"alloy\") where true", 
+        ]
+      }
       
       output {
         metrics = [otelcol.processor.batch.default.input]
@@ -70,9 +79,9 @@ data:
     // Batch processor - groups data for efficiency
     otelcol.processor.batch "default" {
       output {
-        metrics = [prometheus.remote_write.prometheus.receiver]
-        logs    = [loki.write.default.receiver]
-        traces  = [otelcol.exporter.otlp.tempo.receiver]
+        metrics = [prometheus.remote_write.prometheus]
+        logs    = [loki.write.default]
+        traces  = [otelcol.exporter.otlp.tempo]
       }
     }
 
