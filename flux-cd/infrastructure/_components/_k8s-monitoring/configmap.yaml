@@ -15,7 +15,10 @@ data:
       scrapeTimeout: 10s
 
     # Destinations - where to send telemetry data
-    destinations:
+    destinations: []
+    
+    # Destinations map - actual destination definitions
+    destinationsMap:
       # Prometheus destination for metrics
       prometheus:
         type: prometheus
