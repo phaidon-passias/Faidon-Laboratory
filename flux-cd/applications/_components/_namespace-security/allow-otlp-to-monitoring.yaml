@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-otlp-to-monitoring
+  labels:
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/part-of: namespace-security
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+    ports:
+    - protocol: TCP
+      port: 4317  # OTLP GRPC
+    - protocol: TCP
+      port: 4318  # OTLP HTTP
