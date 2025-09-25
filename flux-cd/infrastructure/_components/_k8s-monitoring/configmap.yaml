@@ -34,7 +34,7 @@ data:
 
       # Tempo destination for traces
       tempo:
-        type: tempo
+        type: otlp
         url: http://tempo:3200
 
     # Features - what to monitor
