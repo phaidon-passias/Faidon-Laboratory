@@ -10,3 +10,5 @@ spec:
   sourceRef:
     kind: GitRepository
     name: applications
+  dependsOn:
+    - name: infrastructure-sync

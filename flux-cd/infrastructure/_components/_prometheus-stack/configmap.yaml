@@ -23,6 +23,10 @@ data:
           limits:
             memory: 1Gi
             cpu: 500m
+        # Ensure ServiceMonitor discovery is enabled
+        serviceMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorSelector: {}
+        serviceMonitorNamespaceSelector: {}
 
     grafana:
       adminPassword: admin
