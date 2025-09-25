@@ -4,8 +4,6 @@ kind: Component
 metadata:
   name: namespace-security
 
-namespace: default
-
 resources:
   - default-deny-all.yaml
   - allow-dns-egress.yaml
