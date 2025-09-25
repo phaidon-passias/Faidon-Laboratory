@@ -5,6 +5,10 @@ metadata:
   namespace: monitoring
 data:
   values.yaml: |
+    # Cluster configuration
+    cluster:
+      name: kind-cluster
+
     # Grafana configuration
     grafana:
       enabled: true
