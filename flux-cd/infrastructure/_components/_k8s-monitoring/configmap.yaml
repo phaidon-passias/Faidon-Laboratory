@@ -9,6 +9,36 @@ data:
     cluster:
       name: kind-cluster
 
+    # Global settings
+    global:
+      scrapeInterval: 60s
+      scrapeTimeout: 10s
+
+    # Destinations - where to send telemetry data
+    destinations:
+      # Prometheus destination for metrics
+      prometheus:
+        type: prometheus
+        url: http://prometheus:9090/api/v1/write
+        # Enable remote write receiver
+        remoteWrite:
+          enabled: true
+
+      # Loki destination for logs
+      loki:
+        type: loki
+        url: http://loki:3100/loki/api/v1/push
+
+      # Tempo destination for traces
+      tempo:
+        type: tempo
+        url: http://tempo:3200
+
+    # Features - what to monitor
+    clusterMetrics:
+      enabled: true
+      destinations: ["prometheus"]
+
     # Grafana configuration
     grafana:
       enabled: true
