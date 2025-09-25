@@ -11,6 +11,6 @@ spec:
     matchLabels:
       app.kubernetes.io/name: alloy
   endpoints:
-  - port: prometheus-metrics
+  - port: prom-metrics
     path: /metrics
     interval: 30s
