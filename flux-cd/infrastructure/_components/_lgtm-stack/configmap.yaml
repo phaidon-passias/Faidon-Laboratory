@@ -62,12 +62,12 @@ data:
           datasources:
             - name: Loki
               type: loki
-              url: http://loki:3100
+              url: http://lgtm-stack-loki-gateway:80
               access: proxy
               isDefault: false
             - name: Tempo
               type: tempo
-              url: http://tempo:3200
+              url: http://lgtm-stack-tempo-query-frontend:3100
               access: proxy
               isDefault: false
             - name: Prometheus

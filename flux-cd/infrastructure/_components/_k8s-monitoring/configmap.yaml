@@ -30,12 +30,12 @@ data:
       # Loki destination for logs
       loki:
         type: loki
-        url: http://lgtm-stack-loki:3100/loki/api/v1/push
+        url: http://lgtm-stack-loki-gateway:80/loki/api/v1/push
 
       # Tempo destination for traces
       tempo:
         type: otlp
-        url: http://lgtm-stack-tempo:3200
+        url: http://lgtm-stack-tempo-distributor:3100
 
     # Features - what to monitor
     clusterMetrics:

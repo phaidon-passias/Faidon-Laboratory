@@ -92,7 +92,7 @@ data:
     // Export logs to Loki via OTLP
     otelcol.exporter.otlp "loki" {
       client {
-        endpoint = "http://lgtm-stack-loki:3100"
+        endpoint = "http://lgtm-stack-loki-gateway:80"
         tls {
           insecure = true
         }
@@ -102,7 +102,7 @@ data:
     // Export traces to Tempo via OTLP
     otelcol.exporter.otlp "tempo" {
       client {
-        endpoint = "http://lgtm-stack-tempo:3200"
+        endpoint = "http://lgtm-stack-tempo-distributor:3100"
         tls {
           insecure = true
         }
