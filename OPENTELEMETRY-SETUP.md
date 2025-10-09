@@ -33,7 +33,7 @@ Grafana Alloy (Collector)
 - **Exporters**: Routes data to Prometheus, Loki, and Tempo
 
 ### 3. LGTM Stack
-- **Prometheus**: Metrics storage and querying
+- **Mimir**: Prometheus-compatible metrics storage and querying
 - **Loki**: Log aggregation
 - **Tempo**: Distributed tracing
 - **Grafana**: Visualization and dashboards
@@ -124,18 +124,27 @@ otelcol.exporter.prometheus "prometheus" {
   forward_to = [prometheus.remote_write.prometheus.receiver]
 }
 
+// Export metrics to Mimir (Prometheus-compatible) via remote write
+prometheus.remote_write "prometheus" {
+  endpoint {
+    url = "http://lgtm-stack-mimir-nginx:80/api/v1/write"
+  }
+}
+
+// Export logs to Loki via OTLP
 otelcol.exporter.otlp "loki" {
   client {
-    endpoint = "http://loki:3100"
+    endpoint = "http://lgtm-stack-loki-gateway:80"
     tls {
       insecure = true
     }
   }
 }
 
+// Export traces to Tempo via OTLP gRPC
 otelcol.exporter.otlp "tempo" {
   client {
-    endpoint = "http://tempo:3200"
+    endpoint = "http://lgtm-stack-tempo-distributor:9095"
     tls {
       insecure = true
     }
