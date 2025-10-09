@@ -121,7 +121,7 @@ data:
     // Export logs to Loki via HTTP API (not OTLP - Loki doesn't support OTLP for logs)
     // We'll use a different approach for app logs vs pod logs
 
-    // Log collection from Kubernetes pods
+    // Log collection from Kubernetes pods (simplified)
     discovery.kubernetes "pods" {
       role = "pod"
     }
@@ -140,48 +140,11 @@ data:
         source_labels = ["__meta_kubernetes_pod_container_name"]
         target_label  = "container"
       }
-      rule {
-        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
-        target_label  = "service"
-      }
     }
 
     loki.source.kubernetes "pods" {
       targets    = discovery.relabel.pods.output
-      forward_to = [loki.process.pods.receiver]
-    }
-
-    loki.process "pods" {
       forward_to = [loki.write.loki.receiver]
-      
-      stage.json {
-        expressions = {
-          level      = "level",
-          message    = "message",
-          service    = "service",
-          version    = "version",
-          environment = "environment",
-          timestamp  = "timestamp",
-          method     = "method",
-          endpoint   = "endpoint",
-          user_agent = "user_agent",
-          work_duration_ms = "work_duration_ms",
-          greeting   = "greeting",
-          error      = "error"
-        }
-      }
-      
-      stage.labels {
-        values = {
-          level      = "",
-          service    = "",
-          version    = "",
-          environment = "",
-          method     = "",
-          endpoint   = "",
-          error      = ""
-        }
-      }
     }
 
     // OTLP-only approach - no Prometheus scraping
