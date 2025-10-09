@@ -7,21 +7,17 @@ spec:
   interval: 5m
   chart:
     spec:
-      chart: configmap-reloader
-      version: "0.8.0"
+      chart: reloader
+      version: "1.0.0"
       sourceRef:
         kind: HelmRepository
         name: stakater
         namespace: monitoring
   values:
+    # Watch ConfigMaps and Secrets globally
     reloader:
-      # Watch ConfigMaps and Secrets
       watchGlobally: true
       # Restart pods when ConfigMaps change
       ignoreSecrets: false
       # Log level
       logFormat: json
-      # Resource to watch
-      resourcesToWatch:
-        - configmaps
-        - secrets
