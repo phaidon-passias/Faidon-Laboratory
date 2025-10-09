@@ -35,7 +35,7 @@ data:
       # Tempo destination for traces
       tempo:
         type: otlp
-        url: http://lgtm-stack-tempo-distributor:3100
+        url: http://lgtm-stack-tempo-distributor:9095
 
     # Features - what to monitor
     clusterMetrics:
