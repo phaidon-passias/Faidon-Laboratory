@@ -26,19 +26,8 @@ data:
       }
     }
 
-    // Separate OTLP receiver for logs (apps will send logs here)
-    otelcol.receiver.otlp "logs" {
-      grpc {
-        endpoint = "0.0.0.0:4319"
-      }
-      http {
-        endpoint = "0.0.0.0:4320"
-      }
-      
-      output {
-        logs = [loki.write.loki.receiver]
-      }
-    }
+    // Note: Loki doesn't support OTLP for logs
+    // Apps should send logs via standard logging (stdout/stderr) which will be collected by loki.source.kubernetes
 
     // Step 1: Detect basic resource attributes
     otelcol.processor.resourcedetection "basic_detection" {
