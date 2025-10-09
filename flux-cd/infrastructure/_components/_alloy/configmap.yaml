@@ -85,7 +85,7 @@ data:
     // Export metrics to Mimir (Prometheus-compatible) via remote write
     prometheus.remote_write "prometheus" {
       endpoint {
-        url = "http://lgtm-stack-mimir-nginx:80/api/v1/write"
+        url = "http://lgtm-stack-mimir-nginx:80/api/v1/push"
       }
     }
 
