@@ -133,40 +133,7 @@ data:
 
     loki.source.kubernetes "pods" {
       targets    = discovery.relabel.pods.output
-      forward_to = [loki.process.pods.receiver]
-    }
-
-    loki.process "pods" {
       forward_to = [loki.write.loki.receiver]
-      
-      stage.json {
-        expressions = {
-          level      = "level",
-          message    = "message",
-          service    = "service",
-          version    = "version",
-          environment = "environment",
-          timestamp  = "timestamp",
-          method     = "method",
-          endpoint   = "endpoint",
-          user_agent = "user_agent",
-          work_duration_ms = "work_duration_ms",
-          greeting   = "greeting",
-          error      = "error"
-        }
-      }
-      
-      stage.labels {
-        values = {
-          level      = "",
-          service    = "",
-          version    = "",
-          environment = "",
-          method     = "",
-          endpoint   = "",
-          error      = ""
-        }
-      }
     }
 
     // OTLP-only approach - no Prometheus scraping
