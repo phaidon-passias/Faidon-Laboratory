@@ -1,6 +1,8 @@
-import os, random, time
-from flask import Flask, jsonify
+import os, random, time, json
+from flask import Flask, jsonify, request
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+import logging
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -11,6 +13,26 @@ START_TIME = time.time()
 
 REQS = Counter("http_requests_total", "HTTP requests", ["method","endpoint","code"])
 LAT = Histogram("http_request_duration_seconds", "Req duration (s)", ["endpoint","method"])
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+def log_structured(level, message, **kwargs):
+    """Log structured data in JSON format"""
+    log_data = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "level": level,
+        "message": message,
+        "service": "demo-app-python",
+        "version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        **kwargs
+    }
+    getattr(logger, level.lower())(json.dumps(log_data))
 
 @app.route("/healthz")
 def healthz():
@@ -28,13 +50,31 @@ def readyz():
 @app.route("/work")
 def work():
     t0 = time.time()
+    work_duration = random.uniform(0.05, 0.2)
+    
     try:
         # Simulate variable latency
-        time.sleep(random.uniform(0.05, 0.2))
+        time.sleep(work_duration)
         
         if random.random() < FAIL_RATE:
+            # Log the failure
+            log_structured("ERROR", "Work request failed", 
+                         error="simulated failure",
+                         method=request.method,
+                         endpoint="/work",
+                         user_agent=request.headers.get('User-Agent', ''),
+                         work_duration_ms=work_duration * 1000)
+            
             REQS.labels("GET", "/work", "500").inc()
             return jsonify({"ok": False, "error": "simulated failure"}), 500
+        
+        # Log the success
+        log_structured("INFO", "Work request completed successfully",
+                     method=request.method,
+                     endpoint="/work",
+                     user_agent=request.headers.get('User-Agent', ''),
+                     work_duration_ms=work_duration * 1000,
+                     greeting=GREETING)
         
         REQS.labels("GET", "/work", "200").inc()
         return jsonify({"ok": True, "greeting": GREETING}), 200
@@ -47,4 +87,11 @@ def metrics():
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 if __name__ == "__main__":
+    # Log startup
+    log_structured("INFO", "Application started successfully",
+                 port=8000,
+                 fail_rate=FAIL_RATE,
+                 ready_delay_sec=READY_DELAY,
+                 greeting=GREETING)
+    
     app.run(host="0.0.0.0", port=8000)

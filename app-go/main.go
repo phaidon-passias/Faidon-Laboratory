@@ -146,6 +146,26 @@ func initMetrics(ctx context.Context, res *resource.Resource) {
 	}
 }
 
+// Helper function for structured logging
+func logStructured(level, message string, attrs map[string]interface{}) {
+	logData := map[string]interface{}{
+		"timestamp":   time.Now().UTC().Format(time.RFC3339),
+		"level":       level,
+		"message":     message,
+		"service":     serviceName,
+		"version":     serviceVersion,
+		"environment": environment,
+	}
+	
+	// Add additional attributes
+	for k, v := range attrs {
+		logData[k] = v
+	}
+	
+	jsonData, _ := json.Marshal(logData)
+	log.Println(string(jsonData))
+}
+
 // Helper functions for environment variables
 func getEnvString(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
@@ -291,6 +311,15 @@ func workHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Simulate failure
 	if rand.Float64() < failRate {
+		// Log the failure
+		logStructured("ERROR", "Work request failed", map[string]interface{}{
+			"error":           "simulated failure",
+			"method":          r.Method,
+			"endpoint":        "/work",
+			"user_agent":      r.UserAgent(),
+			"work_duration_ms": float64(workDuration.Nanoseconds()) / 1e6,
+		})
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -317,6 +346,15 @@ func workHandler(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+
+	// Log the success
+	logStructured("INFO", "Work request completed successfully", map[string]interface{}{
+		"method":           r.Method,
+		"endpoint":         "/work",
+		"user_agent":       r.UserAgent(),
+		"work_duration_ms": float64(workDuration.Nanoseconds()) / 1e6,
+		"greeting":         greeting,
+	})
 
 	// Success response
 	w.Header().Set("Content-Type", "application/json")
@@ -362,6 +400,15 @@ func main() {
 	log.Printf("Alloy URL: %s", alloyURL)
 	log.Printf("Service: %s v%s (%s)", serviceName, serviceVersion, environment)
 	log.Printf("Configuration: failRate=%.2f, readyDelay=%ds, greeting=%s", failRate, readyDelay, greeting)
+
+	// Log startup
+	logStructured("INFO", "Application started successfully", map[string]interface{}{
+		"port":            port,
+		"alloy_url":       alloyURL,
+		"fail_rate":       failRate,
+		"ready_delay_sec": readyDelay,
+		"greeting":        greeting,
+	})
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal("Server failed to start:", err)
