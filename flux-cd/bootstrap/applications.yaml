@@ -4,7 +4,7 @@ metadata:
   name: applications-sync
   namespace: flux-system
 spec:
-  interval: 10m0s
+  interval: 1m0s
   path: ./flux-cd/applications
   prune: true
   sourceRef:

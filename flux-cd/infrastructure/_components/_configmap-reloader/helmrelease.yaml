@@ -4,7 +4,7 @@ metadata:
   name: configmap-reloader
   namespace: monitoring
 spec:
-  interval: 5m
+  interval: 1m
   chart:
     spec:
       chart: reloader
