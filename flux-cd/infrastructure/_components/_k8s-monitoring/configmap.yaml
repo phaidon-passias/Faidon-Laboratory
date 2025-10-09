@@ -19,10 +19,10 @@ data:
     
     # Destinations map - actual destination definitions
     destinationsMap:
-      # Prometheus destination for metrics (using Mimir from LGTM stack)
+      # Prometheus destination for metrics
       prometheus:
         type: prometheus
-        url: http://lgtm-stack-mimir:9009/api/v1/write
+        url: http://lgtm-stack-prometheus:9090/api/v1/write
         # Enable remote write receiver
         remoteWrite:
           enabled: true

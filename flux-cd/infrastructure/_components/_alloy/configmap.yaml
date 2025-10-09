@@ -81,10 +81,10 @@ data:
       forward_to = [prometheus.remote_write.prometheus.receiver]
     }
 
-    // Export metrics to Mimir (Prometheus-compatible) via remote write
+    // Export metrics to Prometheus via remote write
     prometheus.remote_write "prometheus" {
       endpoint {
-        url = "http://lgtm-stack-mimir:9009/api/v1/write"
+        url = "http://lgtm-stack-prometheus:9090/api/v1/write"
       }
     }
 

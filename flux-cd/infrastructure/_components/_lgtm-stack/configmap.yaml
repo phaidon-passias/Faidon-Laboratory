@@ -72,7 +72,7 @@ data:
               isDefault: false
             - name: Prometheus
               type: prometheus
-              url: http://lgtm-stack-mimir:9009
+              url: http://lgtm-stack-prometheus:9090
               access: proxy
               isDefault: true
     
@@ -96,15 +96,24 @@ data:
     
     # Mimir configuration (for metrics - Prometheus-compatible)
     mimir:
+      enabled: false
+    
+    # Simple Prometheus server for metrics
+    prometheus:
       enabled: true
-      persistence:
-        enabled: true
-        size: 10Gi
-        storageClass: "local-path"
-      resources:
-        requests:
-          memory: 256Mi
-          cpu: 100m
-        limits:
-          memory: 1Gi
-          cpu: 500m
+      server:
+        retention: 168h
+        persistentVolume:
+          enabled: true
+          size: 10Gi
+          storageClass: "local-path"
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 1Gi
+            cpu: 500m
+        # Enable remote write receiver for Alloy
+        extraArgs:
+          - --web.enable-remote-write-receiver
