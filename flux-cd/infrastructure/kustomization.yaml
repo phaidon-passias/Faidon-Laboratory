@@ -14,3 +14,4 @@ commonLabels:
 resources:
   - mock-cluster-aka-namespaces/
   - _components/_lgtm-stack/
+  - _components/_configmap-reloader/

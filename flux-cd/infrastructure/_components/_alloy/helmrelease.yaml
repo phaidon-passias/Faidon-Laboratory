@@ -17,6 +17,9 @@ spec:
     controller:
       type: deployment
       replicas: 1
+      annotations:
+        # ConfigMap reloader annotation - restarts pod when alloy-config changes
+        configmap.reloader.stakater.com/reload: "alloy-config"
     image:
       tag: "v1.5.1"
     alloy:
