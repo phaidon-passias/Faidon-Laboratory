@@ -72,7 +72,7 @@ data:
               isDefault: false
             - name: Prometheus
               type: prometheus
-              url: http://lgtm-stack-mimir-nginx:80
+              url: http://lgtm-stack-mimir-nginx:80/prometheus
               access: proxy
               isDefault: true
     
