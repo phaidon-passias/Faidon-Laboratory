@@ -16,3 +16,4 @@ data:
   service_version: "1.0.0"
   environment: "development"
   alloy_url: "grafana-alloy.monitoring.svc.cluster.local:4318"
+  alloy_logs_url: "grafana-alloy.monitoring.svc.cluster.local:4320"

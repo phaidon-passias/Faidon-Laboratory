@@ -11,7 +11,7 @@ data:
       format = "logfmt"
     }
 
-    // OTLP receiver - this is where your apps will send data
+    // OTLP receiver for metrics and traces - this is where your apps will send data
     otelcol.receiver.otlp "default" {
       grpc {
         endpoint = "0.0.0.0:4317"
@@ -22,8 +22,21 @@ data:
       
       output {
         metrics = [otelcol.processor.resourcedetection.basic_detection.input]
-        logs    = [otelcol.processor.resourcedetection.basic_detection.input]
         traces  = [otelcol.processor.resourcedetection.basic_detection.input]
+      }
+    }
+
+    // Separate OTLP receiver for logs (apps will send logs here)
+    otelcol.receiver.otlp "logs" {
+      grpc {
+        endpoint = "0.0.0.0:4319"
+      }
+      http {
+        endpoint = "0.0.0.0:4320"
+      }
+      
+      output {
+        logs = [loki.write.loki.receiver]
       }
     }
 
@@ -71,7 +84,6 @@ data:
       
       output {
         metrics = [otelcol.exporter.prometheus.prometheus.input]
-        logs    = [loki.write.loki.receiver]
         traces  = [otelcol.exporter.otlp.tempo.input]
       }
     }
@@ -106,6 +118,9 @@ data:
       }
     }
 
+    // Export logs to Loki via HTTP API (not OTLP - Loki doesn't support OTLP for logs)
+    // We'll use a different approach for app logs vs pod logs
+
     // Log collection from Kubernetes pods
     discovery.kubernetes "pods" {
       role = "pod"
@@ -133,7 +148,40 @@ data:
 
     loki.source.kubernetes "pods" {
       targets    = discovery.relabel.pods.output
+      forward_to = [loki.process.pods.receiver]
+    }
+
+    loki.process "pods" {
       forward_to = [loki.write.loki.receiver]
+      
+      stage.json {
+        expressions = {
+          level      = "level",
+          message    = "message",
+          service    = "service",
+          version    = "version",
+          environment = "environment",
+          timestamp  = "timestamp",
+          method     = "method",
+          endpoint   = "endpoint",
+          user_agent = "user_agent",
+          work_duration_ms = "work_duration_ms",
+          greeting   = "greeting",
+          error      = "error"
+        }
+      }
+      
+      stage.labels {
+        values = {
+          level      = "",
+          service    = "",
+          version    = "",
+          environment = "",
+          method     = "",
+          endpoint   = "",
+          error      = ""
+        }
+      }
     }
 
     // OTLP-only approach - no Prometheus scraping
