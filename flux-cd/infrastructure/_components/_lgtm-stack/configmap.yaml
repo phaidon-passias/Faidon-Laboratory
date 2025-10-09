@@ -96,11 +96,22 @@ data:
     
     # Mimir configuration (for metrics - Prometheus-compatible)
     mimir:
-      enabled: false
-    
-    # Simple Prometheus server for metrics
-    prometheus:
       enabled: true
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: "local-path"
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+    
+    # Simple Prometheus server for metrics (disabled - using Mimir instead)
+    prometheus:
+      enabled: false
       server:
         retention: 168h
         persistentVolume:
