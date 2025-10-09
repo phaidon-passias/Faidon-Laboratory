@@ -71,7 +71,7 @@ data:
       
       output {
         metrics = [otelcol.exporter.prometheus.prometheus.input]
-        logs    = [otelcol.exporter.otlp.loki.input]
+        logs    = [loki.write.loki.receiver]
         traces  = [otelcol.exporter.otlp.tempo.input]
       }
     }
@@ -89,13 +89,10 @@ data:
     }
 
 
-    // Export logs to Loki via OTLP
-    otelcol.exporter.otlp "loki" {
-      client {
-        endpoint = "http://lgtm-stack-loki-gateway:80"
-        tls {
-          insecure = true
-        }
+    // Export logs to Loki via HTTP API
+    loki.write "loki" {
+      endpoint {
+        url = "http://lgtm-stack-loki-gateway:80/loki/api/v1/push"
       }
     }
 
@@ -105,6 +102,69 @@ data:
         endpoint = "http://lgtm-stack-tempo-distributor:9095"
         tls {
           insecure = true
+        }
+      }
+    }
+
+    // Log collection from Kubernetes pods
+    discovery.kubernetes "pods" {
+      role = "pod"
+    }
+
+    discovery.relabel "pods" {
+      targets = discovery.kubernetes.pods.targets
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+        target_label  = "service"
+      }
+    }
+
+    loki.source.kubernetes "pods" {
+      targets    = discovery.relabel.pods.output
+      forward_to = [loki.process.pods.receiver]
+    }
+
+    loki.process "pods" {
+      forward_to = [loki.write.loki.receiver]
+      
+      stage.json {
+        expressions = {
+          level      = "level",
+          message    = "message",
+          service    = "service",
+          version    = "version",
+          environment = "environment",
+          timestamp  = "timestamp",
+          method     = "method",
+          endpoint   = "endpoint",
+          user_agent = "user_agent",
+          work_duration_ms = "work_duration_ms",
+          greeting   = "greeting",
+          error      = "error"
+        }
+      }
+      
+      stage.labels {
+        values = {
+          level      = "",
+          service    = "",
+          version    = "",
+          environment = "",
+          method     = "",
+          endpoint   = "",
+          error      = ""
         }
       }
     }

@@ -156,12 +156,12 @@ func logStructured(level, message string, attrs map[string]interface{}) {
 		"version":     serviceVersion,
 		"environment": environment,
 	}
-	
+
 	// Add additional attributes
 	for k, v := range attrs {
 		logData[k] = v
 	}
-	
+
 	jsonData, _ := json.Marshal(logData)
 	log.Println(string(jsonData))
 }
@@ -313,10 +313,10 @@ func workHandler(w http.ResponseWriter, r *http.Request) {
 	if rand.Float64() < failRate {
 		// Log the failure
 		logStructured("ERROR", "Work request failed", map[string]interface{}{
-			"error":           "simulated failure",
-			"method":          r.Method,
-			"endpoint":        "/work",
-			"user_agent":      r.UserAgent(),
+			"error":            "simulated failure",
+			"method":           r.Method,
+			"endpoint":         "/work",
+			"user_agent":       r.UserAgent(),
 			"work_duration_ms": float64(workDuration.Nanoseconds()) / 1e6,
 		})
 
