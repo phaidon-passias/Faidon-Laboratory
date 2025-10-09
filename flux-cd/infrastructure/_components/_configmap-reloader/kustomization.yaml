@@ -5,10 +5,11 @@ metadata:
   name: configmap-reloader
 
 resources:
+  - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
 
-namespace: monitoring
+namespace: configmap-reloader
 
 labels:
   - includeSelectors: true
