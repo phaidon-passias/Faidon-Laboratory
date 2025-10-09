@@ -72,7 +72,7 @@ data:
               isDefault: false
             - name: Prometheus
               type: prometheus
-              url: http://mimir:9009
+              url: http://lgtm-stack-mimir:9009
               access: proxy
               isDefault: true
     
@@ -108,23 +108,3 @@ data:
         limits:
           memory: 1Gi
           cpu: 500m
-      service:
-        type: ClusterIP
-        port: 9009
-      # Mimir configuration as a string
-      config: |
-        server:
-          http_listen_port: 9009
-        ingester:
-          ring:
-            kvstore:
-              store: memberlist
-        distributor:
-          ring:
-            kvstore:
-              store: memberlist
-        frontend:
-          max_outstanding_per_tenant: 256
-        limits:
-          max_global_series_per_user: 100000
-          max_global_series_per_metric: 20000
