@@ -19,10 +19,10 @@ data:
     
     # Destinations map - actual destination definitions
     destinationsMap:
-      # Prometheus destination for metrics
+      # Prometheus destination for metrics (using Mimir from LGTM stack)
       prometheus:
         type: prometheus
-        url: http://prometheus:9090/api/v1/write
+        url: http://lgtm-stack-mimir:9009/api/v1/write
         # Enable remote write receiver
         remoteWrite:
           enabled: true
@@ -30,12 +30,12 @@ data:
       # Loki destination for logs
       loki:
         type: loki
-        url: http://loki:3100/loki/api/v1/push
+        url: http://lgtm-stack-loki:3100/loki/api/v1/push
 
       # Tempo destination for traces
       tempo:
         type: otlp
-        url: http://tempo:3200
+        url: http://lgtm-stack-tempo:3200
 
     # Features - what to monitor
     clusterMetrics:

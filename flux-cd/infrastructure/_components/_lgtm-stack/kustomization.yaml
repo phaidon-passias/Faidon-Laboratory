@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: lgtm-stack
+
+resources:
+  - helmrepository.yaml
+  - configmap.yaml
+  - helmrelease.yaml
+
+namespace: monitoring
+
+labels:
+  - includeSelectors: true
+    includeTemplates: true
+    pairs:
+      app.kubernetes.io/component: infrastructure
+      app.kubernetes.io/environment: shared
+      app.kubernetes.io/managed-by: flux
+      app.kubernetes.io/name: infrastructure
+      app.kubernetes.io/part-of: demo-app-python-assignment
+      app.kubernetes.io/tier: monitoring

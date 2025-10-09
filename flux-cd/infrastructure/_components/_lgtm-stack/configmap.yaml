@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lgtm-stack-values
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/environment: shared
+    app.kubernetes.io/managed-by: flux
+    app.kubernetes.io/name: infrastructure
+    app.kubernetes.io/part-of: demo-app-python-assignment
+    app.kubernetes.io/tier: monitoring
+data:
+  values.yaml: |
+    # LGTM Stack Configuration
+    # This deploys Loki, Grafana, Tempo, and Mimir components
+    
+    # Global settings
+    global:
+      storageClass: "local-path"  # Use local-path for Kind cluster
+    
+    # Loki configuration (for logs)
+    loki:
+      enabled: true
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: "local-path"
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 200m
+      service:
+        type: ClusterIP
+        port: 3100
+    
+    # Grafana configuration (for visualization)
+    grafana:
+      enabled: true
+      adminPassword: admin
+      persistence:
+        enabled: true
+        size: 5Gi
+        storageClass: "local-path"
+      service:
+        type: ClusterIP
+        port: 80
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 200m
+      # Enable data sources auto-configuration
+      datasources:
+        datasources.yaml:
+          apiVersion: 1
+          datasources:
+            - name: Loki
+              type: loki
+              url: http://loki:3100
+              access: proxy
+              isDefault: false
+            - name: Tempo
+              type: tempo
+              url: http://tempo:3200
+              access: proxy
+              isDefault: false
+            - name: Prometheus
+              type: prometheus
+              url: http://mimir:9009
+              access: proxy
+              isDefault: true
+    
+    # Tempo configuration (for traces)
+    tempo:
+      enabled: true
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: "local-path"
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 200m
+      service:
+        type: ClusterIP
+        port: 3200
+    
+    # Mimir configuration (for metrics - Prometheus-compatible)
+    mimir:
+      enabled: true
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: "local-path"
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+      service:
+        type: ClusterIP
+        port: 9009
+      # Enable Prometheus remote write receiver
+      config:
+        server:
+          http_listen_port: 9009
+        ingester:
+          ring:
+            kvstore:
+              store: memberlist
+        distributor:
+          ring:
+            kvstore:
+              store: memberlist
+        # Enable remote write receiver
+        frontend:
+          max_outstanding_per_tenant: 256
+        # Configure for remote write
+        limits:
+          max_global_series_per_user: 100000
+          max_global_series_per_metric: 20000

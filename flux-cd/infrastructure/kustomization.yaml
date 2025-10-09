@@ -13,3 +13,4 @@ commonLabels:
   app.kubernetes.io/managed-by: flux
 resources:
   - mock-cluster-aka-namespaces/
+  - _components/_lgtm-stack/

@@ -1,0 +1,26 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lgtm-stack
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/environment: shared
+    app.kubernetes.io/managed-by: flux
+    app.kubernetes.io/name: infrastructure
+    app.kubernetes.io/part-of: demo-app-python-assignment
+    app.kubernetes.io/tier: monitoring
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: lgtm-distributed
+      version: ">=1.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: monitoring
+  valuesFrom:
+    - kind: ConfigMap
+      name: lgtm-stack-values
+      valuesKey: values.yaml
