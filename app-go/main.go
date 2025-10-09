@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -11,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -25,14 +29,16 @@ import (
 
 // Configuration from environment variables
 var (
-	failRate       float64
-	readyDelay     int
-	greeting       string
-	startTime      time.Time
-	alloyURL       string
-	serviceName    string
-	serviceVersion string
-	environment    string
+	failRate                float64
+	readyDelay              int
+	greeting                string
+	startTime               time.Time
+	alloyURL                string
+	serviceName             string
+	serviceVersion          string
+	environment             string
+	userServiceURL          string
+	notificationServiceURL  string
 )
 
 // OpenTelemetry components
@@ -49,9 +55,11 @@ func init() {
 	readyDelay = getEnvInt("READINESS_DELAY_SEC", 10)
 	greeting = getEnvString("GREETING", "hello")
 	alloyURL = getEnvString("ALLOY_URL", "grafana-alloy:4318")
-	serviceName = getEnvString("SERVICE_NAME", "demo-app-go")
+	serviceName = getEnvString("SERVICE_NAME", "api-gateway")
 	serviceVersion = getEnvString("SERVICE_VERSION", "1.0.0")
 	environment = getEnvString("ENVIRONMENT", "development")
+	userServiceURL = getEnvString("USER_SERVICE_URL", "http://demo-app-python:80")
+	notificationServiceURL = getEnvString("NOTIFICATION_SERVICE_URL", "http://notification-service:80")
 	startTime = time.Now()
 
 	// Seed random number generator
@@ -286,9 +294,9 @@ func readyzHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-// Work endpoint
-func workHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracer.Start(r.Context(), "work")
+// Process user request endpoint - calls user service and notification service
+func processUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "process_user_request")
 	defer span.End()
 
 	start := time.Now()
@@ -297,81 +305,131 @@ func workHandler(w http.ResponseWriter, r *http.Request) {
 	span.SetAttributes(
 		attribute.String("http.method", r.Method),
 		attribute.String("http.url", r.URL.String()),
-		attribute.String("http.route", "/work"),
+		attribute.String("http.route", "/process-user"),
 	)
 
-	// Simulate some work
-	workDuration := time.Duration(50+rand.Intn(150)) * time.Millisecond
-	time.Sleep(workDuration)
+	// Parse request body
+	var req struct {
+		UserID   string `json:"user_id"`
+		Action   string `json:"action"`
+		Message  string `json:"message"`
+	}
 
-	// Add work duration to span
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logStructured("ERROR", "Failed to parse user request", map[string]interface{}{
+			"error":    err.Error(),
+			"method":   r.Method,
+			"endpoint": "/process-user",
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":    false,
+			"error": "Invalid request body",
+		})
+
+		span.SetAttributes(
+			attribute.Int("http.status_code", 400),
+			attribute.Float64("duration_ms", float64(time.Since(start).Nanoseconds())/1e6),
+			attribute.Bool("process_user.success", false),
+		)
+		return
+	}
+
+	// Add request details to span
 	span.SetAttributes(
-		attribute.Float64("work.duration_ms", float64(workDuration.Nanoseconds())/1e6),
+		attribute.String("user.id", req.UserID),
+		attribute.String("user.action", req.Action),
 	)
 
-	// Simulate failure
-	if rand.Float64() < failRate {
-		// Log the failure
-		logStructured("ERROR", "Work request failed", map[string]interface{}{
-			"error":            "simulated failure",
-			"method":           r.Method,
-			"endpoint":         "/work",
-			"user_agent":       r.UserAgent(),
-			"work_duration_ms": float64(workDuration.Nanoseconds()) / 1e6,
+	// Step 1: Call User Service
+	userServiceResult, err := callUserService(ctx, req.UserID, req.Action)
+	if err != nil {
+		logStructured("ERROR", "User service call failed", map[string]interface{}{
+			"error":    err.Error(),
+			"user_id":  req.UserID,
+			"action":   req.Action,
+			"method":   r.Method,
+			"endpoint": "/process-user",
 		})
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"ok":    false,
-			"error": "simulated failure",
+			"error": "User service unavailable",
 		})
 
-		// Record metrics
-		httpRequests.Add(ctx, 1, metric.WithAttributes(
-			attribute.String("method", r.Method),
-			attribute.String("endpoint", "/work"),
-			attribute.String("code", "500"),
-		))
-		httpDuration.Record(ctx, time.Since(start).Seconds(), metric.WithAttributes(
-			attribute.String("endpoint", "/work"),
-			attribute.String("method", r.Method),
-		))
-
-		// Add span attributes
 		span.SetAttributes(
 			attribute.Int("http.status_code", 500),
 			attribute.Float64("duration_ms", float64(time.Since(start).Nanoseconds())/1e6),
-			attribute.Bool("work.success", false),
+			attribute.Bool("process_user.success", false),
+			attribute.Bool("user_service.success", false),
+		)
+		return
+	}
+
+	// Step 2: Call Notification Service
+	notificationResult, err := callNotificationService(ctx, req.UserID, req.Message, userServiceResult)
+	if err != nil {
+		logStructured("ERROR", "Notification service call failed", map[string]interface{}{
+			"error":    err.Error(),
+			"user_id":  req.UserID,
+			"action":   req.Action,
+			"method":   r.Method,
+			"endpoint": "/process-user",
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":    false,
+			"error": "Notification service unavailable",
+		})
+
+		span.SetAttributes(
+			attribute.Int("http.status_code", 500),
+			attribute.Float64("duration_ms", float64(time.Since(start).Nanoseconds())/1e6),
+			attribute.Bool("process_user.success", false),
+			attribute.Bool("user_service.success", true),
+			attribute.Bool("notification_service.success", false),
 		)
 		return
 	}
 
 	// Log the success
-	logStructured("INFO", "Work request completed successfully", map[string]interface{}{
-		"method":           r.Method,
-		"endpoint":         "/work",
-		"user_agent":       r.UserAgent(),
-		"work_duration_ms": float64(workDuration.Nanoseconds()) / 1e6,
-		"greeting":         greeting,
+	logStructured("INFO", "User request processed successfully", map[string]interface{}{
+		"method":                 r.Method,
+		"endpoint":               "/process-user",
+		"user_id":                req.UserID,
+		"action":                 req.Action,
+		"user_service_result":    userServiceResult,
+		"notification_result":    notificationResult,
+		"total_duration_ms":      float64(time.Since(start).Nanoseconds()) / 1e6,
 	})
 
 	// Success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ok":       true,
-		"greeting": greeting,
+		"ok":                    true,
+		"message":               "User request processed successfully",
+		"user_id":               req.UserID,
+		"action":                req.Action,
+		"user_service_result":   userServiceResult,
+		"notification_result":   notificationResult,
+		"processed_at":          time.Now().UTC().Format(time.RFC3339),
 	})
 
 	// Record metrics
 	httpRequests.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("method", r.Method),
-		attribute.String("endpoint", "/work"),
+		attribute.String("endpoint", "/process-user"),
 		attribute.String("code", "200"),
 	))
 	httpDuration.Record(ctx, time.Since(start).Seconds(), metric.WithAttributes(
-		attribute.String("endpoint", "/work"),
+		attribute.String("endpoint", "/process-user"),
 		attribute.String("method", r.Method),
 	))
 
@@ -379,9 +437,128 @@ func workHandler(w http.ResponseWriter, r *http.Request) {
 	span.SetAttributes(
 		attribute.Int("http.status_code", 200),
 		attribute.Float64("duration_ms", float64(time.Since(start).Nanoseconds())/1e6),
-		attribute.Bool("work.success", true),
-		attribute.String("work.greeting", greeting),
+		attribute.Bool("process_user.success", true),
+		attribute.Bool("user_service.success", true),
+		attribute.Bool("notification_service.success", true),
 	)
+}
+
+// Call User Service (Python service)
+func callUserService(ctx context.Context, userID, action string) (string, error) {
+	ctx, span := tracer.Start(ctx, "call_user_service")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("user_service.url", userServiceURL),
+		attribute.String("user_service.endpoint", "/work"),
+		attribute.String("user.id", userID),
+		attribute.String("user.action", action),
+	)
+
+	// Create HTTP client with OpenTelemetry instrumentation
+	client := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+		Timeout:   5 * time.Second,
+	}
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "GET", userServiceURL+"/work", nil)
+	if err != nil {
+		span.SetAttributes(attribute.Bool("user_service.success", false))
+		return "", err
+	}
+
+	// Make request
+	resp, err := client.Do(req)
+	if err != nil {
+		span.SetAttributes(attribute.Bool("user_service.success", false))
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		span.SetAttributes(attribute.Bool("user_service.success", false))
+		return "", err
+	}
+
+	span.SetAttributes(
+		attribute.Int("user_service.status_code", resp.StatusCode),
+		attribute.Bool("user_service.success", resp.StatusCode == 200),
+	)
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("user service returned status %d", resp.StatusCode)
+	}
+
+	return string(body), nil
+}
+
+// Call Notification Service
+func callNotificationService(ctx context.Context, userID, message string, userServiceResult string) (string, error) {
+	ctx, span := tracer.Start(ctx, "call_notification_service")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("notification_service.url", notificationServiceURL),
+		attribute.String("notification_service.endpoint", "/notifications/send"),
+		attribute.String("user.id", userID),
+	)
+
+	// Create HTTP client with OpenTelemetry instrumentation
+	client := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+		Timeout:   5 * time.Second,
+	}
+
+	// Create request body
+	reqBody := map[string]interface{}{
+		"user_id":  userID,
+		"message":  message + " (User service result: " + userServiceResult + ")",
+		"channel":  "email",
+		"priority": "normal",
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		span.SetAttributes(attribute.Bool("notification_service.success", false))
+		return "", err
+	}
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "POST", notificationServiceURL+"/notifications/send", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		span.SetAttributes(attribute.Bool("notification_service.success", false))
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Make request
+	resp, err := client.Do(req)
+	if err != nil {
+		span.SetAttributes(attribute.Bool("notification_service.success", false))
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		span.SetAttributes(attribute.Bool("notification_service.success", false))
+		return "", err
+	}
+
+	span.SetAttributes(
+		attribute.Int("notification_service.status_code", resp.StatusCode),
+		attribute.Bool("notification_service.success", resp.StatusCode == 200),
+	)
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("notification service returned status %d", resp.StatusCode)
+	}
+
+	return string(body), nil
 }
 
 func main() {
@@ -393,7 +570,7 @@ func main() {
 	// Add routes
 	r.HandleFunc("/healthz", healthzHandler).Methods("GET")
 	r.HandleFunc("/readyz", readyzHandler).Methods("GET")
-	r.HandleFunc("/work", workHandler).Methods("GET")
+	r.HandleFunc("/process-user", processUserHandler).Methods("POST")
 
 	// Start server
 	log.Printf("Starting server on port %s", port)
@@ -402,12 +579,14 @@ func main() {
 	log.Printf("Configuration: failRate=%.2f, readyDelay=%ds, greeting=%s", failRate, readyDelay, greeting)
 
 	// Log startup
-	logStructured("INFO", "Application started successfully", map[string]interface{}{
-		"port":            port,
-		"alloy_url":       alloyURL,
-		"fail_rate":       failRate,
-		"ready_delay_sec": readyDelay,
-		"greeting":        greeting,
+	logStructured("INFO", "API Gateway started successfully", map[string]interface{}{
+		"port":                    port,
+		"alloy_url":               alloyURL,
+		"fail_rate":               failRate,
+		"ready_delay_sec":         readyDelay,
+		"user_service_url":        userServiceURL,
+		"notification_service_url": notificationServiceURL,
+		"service_type":            "api-gateway",
 	})
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {

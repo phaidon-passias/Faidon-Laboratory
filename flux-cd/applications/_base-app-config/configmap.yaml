@@ -11,8 +11,13 @@ metadata:
 data:
   fail_rate: "0.02"
   readiness_delay_sec: "10"
+  greeting: "hello"
+  port: "8000"
   # OpenTelemetry Configuration (base values)
   service_name: "APP_NAME"
   service_version: "1.0.0"
   environment: "development"
   alloy_url: "grafana-alloy.monitoring.svc.cluster.local:4318"
+  # Service-to-service communication URLs (for API Gateway)
+  user_service_url: "http://demo-app-python:80"
+  notification_service_url: "http://notification-service:80"

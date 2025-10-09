@@ -1,0 +1,110 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: notification-service-staging
+
+resources:
+  - ../../_base-app-config
+
+patches:
+  - target:
+      kind: Deployment
+      name: demo-app-go-staging
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: notification-service-staging
+      - op: replace
+        path: /spec/template/spec/containers/0/name
+        value: notification-service
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: localhost:5000/demo-app-notification-service:latest
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/value
+        value: notification-service
+      - op: replace
+        path: /spec/template/spec/containers/0/env/1/value
+        value: 1.0.0
+      - op: replace
+        path: /spec/template/spec/containers/0/env/2/value
+        value: staging
+      - op: replace
+        path: /spec/template/spec/containers/0/env/3/value
+        value: grafana-alloy.monitoring.svc.cluster.local:4318
+      - op: replace
+        path: /spec/template/spec/containers/0/env/4/value
+        value: 0.01
+      - op: replace
+        path: /spec/template/spec/containers/0/env/5/value
+        value: 5
+      - op: replace
+        path: /spec/template/spec/containers/0/env/6/value
+        value: hello
+      - op: replace
+        path: /spec/template/spec/containers/0/env/7/value
+        value: 8000
+      - op: replace
+        path: /spec/template/spec/containers/0/env/8/value
+        value: http://demo-app-python:80
+      - op: replace
+        path: /spec/template/spec/containers/0/env/9/value
+        value: http://notification-service:80
+
+  - target:
+      kind: Service
+      name: demo-app-go-staging
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: notification-service-staging
+      - op: replace
+        path: /spec/selector/app.kubernetes.io/name
+        value: notification-service-staging
+
+  - target:
+      kind: ServiceMonitor
+      name: demo-app-go-staging
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: notification-service-staging
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io/name
+        value: notification-service-staging
+
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: demo-app-go-staging
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: notification-service-staging
+      - op: replace
+        path: /spec/scaleTargetRef/name
+        value: notification-service-staging
+
+  - target:
+      kind: PodDisruptionBudget
+      name: demo-app-go-staging
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: notification-service-staging
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io/name
+        value: notification-service-staging
+
+namespace: staging
+
+labels:
+  - includeSelectors: true
+    includeTemplates: true
+    pairs:
+      app.kubernetes.io/name: notification-service-staging
+      app.kubernetes.io/instance: staging
+      app.kubernetes.io/version: "1.0.0"
+      app.kubernetes.io/component: backend
+      app.kubernetes.io/part-of: demo-app-python-assignment
+      app.kubernetes.io/managed-by: kustomize

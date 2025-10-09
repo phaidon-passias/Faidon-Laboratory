@@ -27,7 +27,7 @@ def log_structured(level, message, **kwargs):
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "level": level,
         "message": message,
-        "service": "demo-app-python",
+        "service": "user-service",
         "version": "1.0.0",
         "environment": os.getenv("ENVIRONMENT", "development"),
         **kwargs
@@ -49,38 +49,96 @@ def readyz():
 
 @app.route("/work")
 def work():
+    """Legacy endpoint for backward compatibility - now acts as user service"""
     t0 = time.time()
-    work_duration = random.uniform(0.05, 0.2)
+    processing_duration = random.uniform(0.05, 0.2)
     
     try:
-        # Simulate variable latency
-        time.sleep(work_duration)
+        # Simulate user data processing
+        time.sleep(processing_duration)
         
         if random.random() < FAIL_RATE:
             # Log the failure
-            log_structured("ERROR", "Work request failed", 
-                         error="simulated failure",
+            log_structured("ERROR", "User processing failed", 
+                         error="simulated user service failure",
                          method=request.method,
                          endpoint="/work",
                          user_agent=request.headers.get('User-Agent', ''),
-                         work_duration_ms=work_duration * 1000)
+                         processing_duration_ms=processing_duration * 1000)
             
             REQS.labels("GET", "/work", "500").inc()
-            return jsonify({"ok": False, "error": "simulated failure"}), 500
+            return jsonify({"ok": False, "error": "simulated user service failure"}), 500
+        
+        # Simulate user data
+        user_data = {
+            "user_id": f"user_{random.randint(1000, 9999)}",
+            "name": f"User {random.randint(1, 100)}",
+            "email": f"user{random.randint(1, 100)}@example.com",
+            "status": "active",
+            "last_login": datetime.utcnow().isoformat() + "Z"
+        }
         
         # Log the success
-        log_structured("INFO", "Work request completed successfully",
+        log_structured("INFO", "User processing completed successfully",
                      method=request.method,
                      endpoint="/work",
                      user_agent=request.headers.get('User-Agent', ''),
-                     work_duration_ms=work_duration * 1000,
+                     processing_duration_ms=processing_duration * 1000,
+                     user_id=user_data["user_id"],
                      greeting=GREETING)
         
         REQS.labels("GET", "/work", "200").inc()
-        return jsonify({"ok": True, "greeting": GREETING}), 200
+        return jsonify({"ok": True, "greeting": GREETING, "user_data": user_data}), 200
     finally:
         # Always record latency regardless of success/failure
         LAT.labels("/work", "GET").observe(time.time() - t0)
+
+@app.route("/users/<user_id>")
+def get_user(user_id):
+    """Get user information by ID"""
+    t0 = time.time()
+    processing_duration = random.uniform(0.03, 0.15)
+    
+    try:
+        # Simulate user lookup
+        time.sleep(processing_duration)
+        
+        if random.random() < FAIL_RATE:
+            # Log the failure
+            log_structured("ERROR", "User lookup failed", 
+                         error="simulated user lookup failure",
+                         method=request.method,
+                         endpoint=f"/users/{user_id}",
+                         user_id=user_id,
+                         user_agent=request.headers.get('User-Agent', ''),
+                         processing_duration_ms=processing_duration * 1000)
+            
+            REQS.labels("GET", f"/users/{user_id}", "500").inc()
+            return jsonify({"ok": False, "error": "User lookup failed"}), 500
+        
+        # Simulate user data
+        user_data = {
+            "user_id": user_id,
+            "name": f"User {user_id}",
+            "email": f"user{user_id}@example.com",
+            "status": "active",
+            "created_at": "2024-01-01T00:00:00Z",
+            "last_login": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        # Log the success
+        log_structured("INFO", "User lookup completed successfully",
+                     method=request.method,
+                     endpoint=f"/users/{user_id}",
+                     user_id=user_id,
+                     user_agent=request.headers.get('User-Agent', ''),
+                     processing_duration_ms=processing_duration * 1000)
+        
+        REQS.labels("GET", f"/users/{user_id}", "200").inc()
+        return jsonify({"ok": True, "user": user_data}), 200
+    finally:
+        # Always record latency regardless of success/failure
+        LAT.labels(f"/users/{user_id}", "GET").observe(time.time() - t0)
 
 @app.route("/metrics")
 def metrics():
@@ -88,10 +146,11 @@ def metrics():
 
 if __name__ == "__main__":
     # Log startup
-    log_structured("INFO", "Application started successfully",
+    log_structured("INFO", "User service started successfully",
                  port=8000,
                  fail_rate=FAIL_RATE,
                  ready_delay_sec=READY_DELAY,
-                 greeting=GREETING)
+                 greeting=GREETING,
+                 service_type="user-service")
     
     app.run(host="0.0.0.0", port=8000)

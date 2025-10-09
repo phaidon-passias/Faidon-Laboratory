@@ -102,6 +102,22 @@ spec:
                 configMapKeyRef:
                   name: APP_NAME-config
                   key: alloy_url
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: APP_NAME-config
+                  key: port
+            # Service-to-service communication URLs (for API Gateway)
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: APP_NAME-config
+                  key: user_service_url
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: APP_NAME-config
+                  key: notification_service_url
           startupProbe:
             httpGet:
               path: /healthz

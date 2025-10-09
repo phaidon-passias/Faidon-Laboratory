@@ -11,6 +11,7 @@ resources:
   # Application-specific resources
   - python/
   - go/
+  - notification-service/
 
 components:
   # Namespace-level security policies (applied once per namespace)
