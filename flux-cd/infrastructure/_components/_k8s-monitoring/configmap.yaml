@@ -64,7 +64,7 @@ data:
       enabled: true
       server:
         retention: 168h
-        persistentVolume:
+        persistentVolume: 
           enabled: true
           size: 10Gi
         resources:

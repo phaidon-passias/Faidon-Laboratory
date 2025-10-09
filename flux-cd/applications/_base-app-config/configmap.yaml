@@ -15,4 +15,4 @@ data:
   service_name: "APP_NAME"
   service_version: "1.0.0"
   environment: "development"
-  alloy_url: "grafana-alloy:4318"
+  alloy_url: "grafana-alloy.monitoring.svc.cluster.local:4318"

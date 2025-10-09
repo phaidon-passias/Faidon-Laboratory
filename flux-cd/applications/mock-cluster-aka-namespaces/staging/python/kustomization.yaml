@@ -54,7 +54,7 @@ patches:
         value: demo-app-python-staging
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: demo-app-python:latest
+        value: localhost:5000/demo-app-python:latest
       - op: replace
         path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
         value: demo-app-python-staging-secret
