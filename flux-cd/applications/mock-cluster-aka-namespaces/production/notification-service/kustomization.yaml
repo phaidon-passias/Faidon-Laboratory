@@ -144,6 +144,9 @@ patches:
       - op: replace
         path: /metadata/labels/app.kubernetes.io~1part-of
         value: microservices-demo
+      - op: replace
+        path: /data/service_name
+        value: notification-service-production
 
   - target:
       kind: Role

@@ -144,6 +144,9 @@ patches:
       - op: replace
         path: /metadata/labels/app.kubernetes.io~1part-of
         value: microservices-demo
+      - op: replace
+        path: /data/service_name
+        value: api-gateway-staging
 
   - target:
       kind: Role
