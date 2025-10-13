@@ -54,7 +54,7 @@ patches:
         value: user-service
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: localhost:5000/user-service:latest
+        value: localhost:5000/user-service:v2
       - op: replace
         path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
         value: user-service-dev-secret
