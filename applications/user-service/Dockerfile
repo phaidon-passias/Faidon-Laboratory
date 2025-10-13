@@ -3,6 +3,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 RUN adduser --uid 10001 --disabled-password --gecos "" appuser
 WORKDIR /app
 COPY requirements.txt .
+COPY shared-libraries/ /shared-libraries/
 RUN pip install --no-cache-dir -r requirements.txt
 COPY server.py .
 RUN chown -R 10001:10001 /app

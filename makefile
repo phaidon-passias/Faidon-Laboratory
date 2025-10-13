@@ -395,7 +395,9 @@ stop-docker-registry:
 ## Build Python app docker image
 python-build:
 	@echo "${GREEN}Building Python app docker image:${RESET}\n"
+	@cp -r shared-libraries applications/user-service/
 	@cd applications/user-service && docker build -t localhost:5000/user-service:latest .
+	@rm -rf applications/user-service/shared-libraries
 
 ## Push Python app docker image to local registry
 python-push:
