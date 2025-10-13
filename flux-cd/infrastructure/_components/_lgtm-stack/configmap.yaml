@@ -94,6 +94,7 @@ data:
         type: ClusterIP
         port: 3200
       # Disable HA for development environment
+      replicationFactor: 1
       distributor:
         replicas: 1
       querier:
