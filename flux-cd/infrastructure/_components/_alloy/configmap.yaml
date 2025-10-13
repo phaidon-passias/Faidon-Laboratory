@@ -100,7 +100,7 @@ data:
     // Export traces to Tempo via OTLP gRPC
     otelcol.exporter.otlp "tempo" {
       client {
-        endpoint = "http://lgtm-stack-tempo-distributor:4318"
+        endpoint = "http://lgtm-stack-tempo-distributor:4317"
         tls {
           insecure = true
         }
