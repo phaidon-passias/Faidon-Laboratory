@@ -98,9 +98,10 @@ data:
     }
 
     // Export traces to Tempo via OTLP gRPC
+    // TEMPORARY: Pointing to Tempo query endpoint to test if Python endpoint fix works
     otelcol.exporter.otlp "tempo" {
       client {
-        endpoint = "http://lgtm-stack-tempo-distributor:4318"
+        endpoint = "http://lgtm-stack-tempo-query-frontend:3100"
         tls {
           insecure = true
         }
