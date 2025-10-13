@@ -271,6 +271,7 @@ make kustomize-structure      # Analyze kustomization structure
 - `flux` - Flux CD CLI for GitOps management
 - `kubectl` - Kubernetes cluster management
 
+
 ## Usage Examples
 
 ### Complete Workflow
@@ -309,6 +310,7 @@ make install-flux-cli
 make wait-for-flux
 make deploy-everything
 make flux-status
+make environment-status
 make cleanup-all
 ```
 

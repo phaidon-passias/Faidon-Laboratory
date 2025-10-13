@@ -2,6 +2,10 @@
 GREEN = \033[1;32m
 RESET = \033[0m
 WHITE = \033[1;38;5;231m
+BLUE = \033[1;34m
+YELLOW = \033[1;33m
+RED = \033[1;31m
+
 # ------------------------------
 # Configurable variables (override via: make CLUSTER_NAME=mycluster)
 # ------------------------------
@@ -15,10 +19,29 @@ CREATE_WAIT ?= 120s
 KIND_CONFIG ?= scripts/kind-three-node.yaml
 HPA_DURATION ?= 120        # seconds
 HPA_CONCURRENCY ?= 200      # parallel clients
-HPA_PAUSE ?= 0.1    
+HPA_PAUSE ?= 0.1
+
+# Resource configuration for different environments
+DEV_CPU_REQUEST ?= 50m
+DEV_CPU_LIMIT ?= 200m
+DEV_MEMORY_REQUEST ?= 64Mi
+DEV_MEMORY_LIMIT ?= 128Mi
+DEV_REPLICAS ?= 1
+
+STAGING_CPU_REQUEST ?= 100m
+STAGING_CPU_LIMIT ?= 300m
+STAGING_MEMORY_REQUEST ?= 128Mi
+STAGING_MEMORY_LIMIT ?= 256Mi
+STAGING_REPLICAS ?= 2
+
+PROD_CPU_REQUEST ?= 200m
+PROD_CPU_LIMIT ?= 500m
+PROD_MEMORY_REQUEST ?= 256Mi
+PROD_MEMORY_LIMIT ?= 512Mi
+PROD_REPLICAS ?= 3    
 
 .DEFAULT_GOAL := help
-.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything install-tools check-versions setup-all teardown-all hpa-demo hpa-reset debug-metrics check-flux kustomize-build kustomize-validate kustomize-lint kustomize-structure
+.PHONY: help check-deps create-cluster delete-cluster use-context cluster current-context list-clusters hpa-load hpa-watch install-metrics deploy-everything install-tools check-versions setup-all teardown-all hpa-demo hpa-reset debug-metrics check-flux kustomize-build kustomize-validate kustomize-lint kustomize-structure environment-status
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ { printf "  %-22s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -644,4 +667,31 @@ install-linters: ## Install kustomize validation tools
 	fi
 	@echo ""
 	@echo "🎉 All kustomize validation tools are ready!"
+
+# ------------------------------
+# Environment Status & Validation
+# ------------------------------
+
+environment-status: ## Show detailed status of all environments
+	@echo "${BLUE}🌍 Environment Status Overview${RESET}"
+	@echo "================================"
+	@echo ""
+	@for env in dev staging production; do \
+		echo "${YELLOW}📋 Environment: $$env${RESET}"; \
+		echo "-------------------"; \
+		if kubectl get namespace $$env >/dev/null 2>&1; then \
+			echo "✅ Namespace exists"; \
+			pod_count=$$(kubectl get pods -n $$env --no-headers 2>/dev/null | wc -l); \
+			ready_pods=$$(kubectl get pods -n $$env --no-headers 2>/dev/null | grep -c "Running" || echo "0"); \
+			echo "📦 Pods: $$ready_pods/$$pod_count ready"; \
+			echo "🔧 Services:"; \
+			kubectl get services -n $$env --no-headers 2>/dev/null | awk '{print "  - " $$1 " (" $$2 ")"}' || echo "  No services found"; \
+			echo "🌐 Network Policies:"; \
+			kubectl get networkpolicies -n $$env --no-headers 2>/dev/null | awk '{print "  - " $$1}' || echo "  No network policies found"; \
+		else \
+			echo "❌ Namespace $$env not found"; \
+		fi; \
+		echo ""; \
+	done
+
 

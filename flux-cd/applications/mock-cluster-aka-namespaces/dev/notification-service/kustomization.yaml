@@ -263,3 +263,35 @@ patches:
       - op: replace
         path: /spec/podSelector/matchLabels/app.kubernetes.io~1name
         value: notification-service-dev
+  # Resource patches for development environment
+  - target:
+      kind: Deployment
+      name: notification-service-dev
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 50m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 64Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 200m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 128Mi
+
+  # HPA patches for development environment
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: notification-service-dev-hpa
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3

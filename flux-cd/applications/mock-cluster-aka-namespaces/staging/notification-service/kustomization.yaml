@@ -269,3 +269,35 @@ patches:
       - op: replace
         path: /spec/podSelector/matchLabels/app.kubernetes.io~1name
         value: notification-service-staging
+  # Resource patches for staging environment
+  - target:
+      kind: Deployment
+      name: notification-service-staging
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 100m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 128Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 300m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 256Mi
+
+  # HPA patches for staging environment
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: notification-service-staging-hpa
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 2
+      - op: replace
+        path: /spec/maxReplicas
+        value: 4

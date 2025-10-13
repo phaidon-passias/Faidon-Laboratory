@@ -38,9 +38,9 @@ A production-ready Kubernetes deployment with GitOps automation, monitoring, and
 - **`EMPLOYER-PRESENTATION.md`**: Professional portfolio presentation for employers
 - **`FUTURE-ROADMAP.md`**: Detailed enhancement plan and implementation roadmap
 - **`makefile`**: Complete automation for cluster management and GitOps
-- **`scripts/`**: Automation scripts for setup, testing, and teardown
-- **`app-python/`**: Python application with enhanced metrics
-- **`flux-cd/`**: Complete GitOps configuration with multi-environment setup
+- **`scripts/`**: Automation scripts for setup, testing, validation, and teardown
+- **`applications/`**: Microservices applications (API Gateway, User Service, Notification Service)
+- **`flux-cd/`**: Complete GitOps configuration with multi-environment setup and resource management
 - **`screenshots/`**: Documentation screenshots and verification evidence
 - **`_docsProvidedByKaikoUnchanged/`**: Original assignment documentation (unchanged)
 
@@ -49,6 +49,7 @@ A production-ready Kubernetes deployment with GitOps automation, monitoring, and
 **For step-by-step execution instructions, see [how-to-run.MD](how-to-run.MD)**
 
 **For detailed script documentation, see [scripts/SCRIPTS.md](scripts/SCRIPTS.md)**
+
 
 ### **Key Features Implemented**
 - 🏗️ **3-node Kind cluster** with proper node labels/taints
@@ -61,6 +62,7 @@ A production-ready Kubernetes deployment with GitOps automation, monitoring, and
 - 🏷️ **Standardized labeling** with app.kubernetes.io/* labels
 - 🔍 **Kustomize validation** with kubeconform schema validation
 - 🧪 **Complete automation** with makefile and scripts
+- 💾 **Environment-specific resource management** (CPU, memory, replicas)
 
 
 ## Part 1 – Kubernetes and Application setup:
