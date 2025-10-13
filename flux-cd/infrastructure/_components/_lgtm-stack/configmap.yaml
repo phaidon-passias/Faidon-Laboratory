@@ -93,6 +93,15 @@ data:
       service:
         type: ClusterIP
         port: 3200
+      # Disable HA for development environment
+      distributor:
+        replicas: 1
+      querier:
+        replicas: 1
+      queryFrontend:
+        replicas: 1
+      compactor:
+        replicas: 1
       # Enable OTLP receivers for OpenTelemetry data
       traces:
         otlp:
