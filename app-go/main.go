@@ -29,16 +29,16 @@ import (
 
 // Configuration from environment variables
 var (
-	failRate                float64
-	readyDelay              int
-	greeting                string
-	startTime               time.Time
-	alloyURL                string
-	serviceName             string
-	serviceVersion          string
-	environment             string
-	userServiceURL          string
-	notificationServiceURL  string
+	failRate               float64
+	readyDelay             int
+	greeting               string
+	startTime              time.Time
+	alloyURL               string
+	serviceName            string
+	serviceVersion         string
+	environment            string
+	userServiceURL         string
+	notificationServiceURL string
 )
 
 // OpenTelemetry components
@@ -310,9 +310,9 @@ func processUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request body
 	var req struct {
-		UserID   string `json:"user_id"`
-		Action   string `json:"action"`
-		Message  string `json:"message"`
+		UserID  string `json:"user_id"`
+		Action  string `json:"action"`
+		Message string `json:"message"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -400,26 +400,26 @@ func processUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Log the success
 	logStructured("INFO", "User request processed successfully", map[string]interface{}{
-		"method":                 r.Method,
-		"endpoint":               "/process-user",
-		"user_id":                req.UserID,
-		"action":                 req.Action,
-		"user_service_result":    userServiceResult,
-		"notification_result":    notificationResult,
-		"total_duration_ms":      float64(time.Since(start).Nanoseconds()) / 1e6,
+		"method":              r.Method,
+		"endpoint":            "/process-user",
+		"user_id":             req.UserID,
+		"action":              req.Action,
+		"user_service_result": userServiceResult,
+		"notification_result": notificationResult,
+		"total_duration_ms":   float64(time.Since(start).Nanoseconds()) / 1e6,
 	})
 
 	// Success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ok":                    true,
-		"message":               "User request processed successfully",
-		"user_id":               req.UserID,
-		"action":                req.Action,
-		"user_service_result":   userServiceResult,
-		"notification_result":   notificationResult,
-		"processed_at":          time.Now().UTC().Format(time.RFC3339),
+		"ok":                  true,
+		"message":             "User request processed successfully",
+		"user_id":             req.UserID,
+		"action":              req.Action,
+		"user_service_result": userServiceResult,
+		"notification_result": notificationResult,
+		"processed_at":        time.Now().UTC().Format(time.RFC3339),
 	})
 
 	// Record metrics
@@ -580,13 +580,13 @@ func main() {
 
 	// Log startup
 	logStructured("INFO", "API Gateway started successfully", map[string]interface{}{
-		"port":                    port,
-		"alloy_url":               alloyURL,
-		"fail_rate":               failRate,
-		"ready_delay_sec":         readyDelay,
-		"user_service_url":        userServiceURL,
+		"port":                     port,
+		"alloy_url":                alloyURL,
+		"fail_rate":                failRate,
+		"ready_delay_sec":          readyDelay,
+		"user_service_url":         userServiceURL,
 		"notification_service_url": notificationServiceURL,
-		"service_type":            "api-gateway",
+		"service_type":             "api-gateway",
 	})
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {

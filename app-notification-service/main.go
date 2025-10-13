@@ -302,10 +302,10 @@ func sendNotificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request body
 	var req struct {
-		UserID      string `json:"user_id"`
-		Message     string `json:"message"`
-		Channel     string `json:"channel"`
-		Priority    string `json:"priority"`
+		UserID   string `json:"user_id"`
+		Message  string `json:"message"`
+		Channel  string `json:"channel"`
+		Priority string `json:"priority"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -346,13 +346,13 @@ func sendNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	if rand.Float64() < failRate {
 		// Log the failure
 		logStructured("ERROR", "Notification sending failed", map[string]interface{}{
-			"error":                    "simulated notification failure",
-			"method":                   r.Method,
-			"endpoint":                 "/notifications/send",
-			"user_id":                  req.UserID,
-			"channel":                  req.Channel,
-			"priority":                 req.Priority,
-			"processing_duration_ms":   float64(processingDuration.Nanoseconds()) / 1e6,
+			"error":                  "simulated notification failure",
+			"method":                 r.Method,
+			"endpoint":               "/notifications/send",
+			"user_id":                req.UserID,
+			"channel":                req.Channel,
+			"priority":               req.Priority,
+			"processing_duration_ms": float64(processingDuration.Nanoseconds()) / 1e6,
 		})
 
 		w.Header().Set("Content-Type", "application/json")
@@ -397,12 +397,12 @@ func sendNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ok":         true,
-		"message":    "Notification sent successfully",
-		"user_id":    req.UserID,
-		"channel":    req.Channel,
-		"priority":   req.Priority,
-		"sent_at":    time.Now().UTC().Format(time.RFC3339),
+		"ok":       true,
+		"message":  "Notification sent successfully",
+		"user_id":  req.UserID,
+		"channel":  req.Channel,
+		"priority": req.Priority,
+		"sent_at":  time.Now().UTC().Format(time.RFC3339),
 	})
 
 	// Record metrics
