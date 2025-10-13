@@ -373,7 +373,7 @@ start-cluster: create-cluster start-docker-registry use-context install-metrics-
 stop-cluster: stop-docker-registry delete-cluster  ## Delete cluster and stop docker registry
 
 ## build service docker image and push to local registry
-build-and-push-services: python-build python-push go-build go-push
+build-and-push-services: python-build python-push go-build go-push notification-build notification-push
 
 start-docker-registry:
 	@echo "${GREEN}Start local docker registry:${RESET}\n"
@@ -395,22 +395,36 @@ stop-docker-registry:
 ## Build Python app docker image
 python-build:
 	@echo "${GREEN}Building Python app docker image:${RESET}\n"
-	@cd app-python && docker build -t localhost:5000/demo-app-python:latest .
+	@cd applications/user-service && docker build -t localhost:5000/user-service:latest .
 
 ## Push Python app docker image to local registry
 python-push:
 	@echo "${GREEN}Pushing Python app docker image to local registry:${RESET}\n"
-	@docker push localhost:5000/demo-app-python:latest
+	@docker push localhost:5000/user-service:latest
 
 ## Build Go app docker image
 go-build:
 	@echo "${GREEN}Building Go app docker image:${RESET}\n"
-	@cd app-go && docker build -t localhost:5000/demo-app-go:latest .
+	@cp -r shared-libraries applications/api-gateway/
+	@cd applications/api-gateway && docker build -t localhost:5000/api-gateway:latest .
+	@rm -rf applications/api-gateway/shared-libraries
 
 ## Push Go app docker image to local registry
 go-push:
 	@echo "${GREEN}Pushing Go app docker image to local registry:${RESET}\n"
-	@docker push localhost:5000/demo-app-go:latest
+	@docker push localhost:5000/api-gateway:latest
+
+## Build Notification service docker image
+notification-build:
+	@echo "${GREEN}Building Notification service docker image:${RESET}\n"
+	@cp -r shared-libraries applications/notification-service/
+	@cd applications/notification-service && docker build -t localhost:5000/notification-service:latest .
+	@rm -rf applications/notification-service/shared-libraries
+
+## Push Notification service docker image to local registry
+notification-push:
+	@echo "${GREEN}Pushing Notification service docker image to local registry:${RESET}\n"
+	@docker push localhost:5000/notification-service:latest
 
 ## Legacy targets for backward compatibility
 app-build: python-build
@@ -419,7 +433,8 @@ app-push: python-push
 ## Individual app build targets
 build-python: python-build python-push ## Build and push only Python app
 build-go: go-build go-push ## Build and push only Go app
-build-both: build-and-push-services ## Build and push both Python and Go apps
+build-notification: notification-build notification-push ## Build and push only Notification service
+build-all: build-and-push-services ## Build and push all services
 
 current-context: ## Show current kubectl context
 	@$(KUBECTL) config current-context

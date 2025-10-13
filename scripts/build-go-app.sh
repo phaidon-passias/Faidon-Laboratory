@@ -13,13 +13,13 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-APP_NAME="demo-app-go"
-APP_DIR="app-go"
+APP_NAME="api-gateway"
+APP_DIR="applications/api-gateway"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 REGISTRY="${REGISTRY:-localhost:5000}"
 
-echo -e "${BLUE}🚀 Building Demo App Go${NC}"
-echo -e "${BLUE}========================${NC}"
+echo -e "${BLUE}🚀 Building API Gateway${NC}"
+echo -e "${BLUE}======================${NC}"
 
 # Check if we're in the right directory
 if [ ! -d "$APP_DIR" ]; then

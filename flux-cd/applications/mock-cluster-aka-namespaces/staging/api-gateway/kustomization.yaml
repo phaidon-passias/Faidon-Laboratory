@@ -1,0 +1,265 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: api-gateway-staging
+
+resources:
+  - ../../../_base-app-config
+
+namespace: staging
+
+labels:
+  - includeSelectors: true
+    includeTemplates: true
+    pairs:
+      app.kubernetes.io/environment: staging
+      app.kubernetes.io/tier: staging
+      app.kubernetes.io/implementation: go
+
+patches:
+  - target:
+      kind: Deployment
+      name: APP_NAME
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /spec/template/metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /spec/template/metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/template/spec/affinity/podAntiAffinity/preferredDuringSchedulingIgnoredDuringExecution/0/podAffinityTerm/labelSelector/matchLabels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /spec/template/spec/topologySpreadConstraints/0/labelSelector/matchLabels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /spec/template/spec/serviceAccountName
+        value: api-gateway-staging
+      - op: replace
+        path: /spec/template/spec/containers/0/name
+        value: api-gateway
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: localhost:5000/api-gateway:latest
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
+        value: api-gateway-staging-secret
+      - op: replace
+        path: /spec/template/spec/containers/0/env/1/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/2/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/3/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/4/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/5/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/6/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/7/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/8/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /spec/template/spec/containers/0/env/9/valueFrom/configMapKeyRef/name
+        value: api-gateway-staging-config
+
+  - target:
+      kind: Service
+      name: APP_NAME
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/selector/app.kubernetes.io~1name
+        value: api-gateway-staging
+
+  - target:
+      kind: ServiceAccount
+      name: APP_NAME
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+
+  - target:
+      kind: Secret
+      name: APP_NAME-secret
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-secret
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+
+  - target:
+      kind: ConfigMap
+      name: APP_NAME-config
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-config
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+
+  - target:
+      kind: Role
+      name: APP_NAME-read-config
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-read-config
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+
+  - target:
+      kind: RoleBinding
+      name: APP_NAME-read-config-binding
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-read-config-binding
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /roleRef/name
+        value: api-gateway-staging-read-config
+      - op: replace
+        path: /subjects/0/name
+        value: api-gateway-staging
+
+  - target:
+      kind: PodDisruptionBudget
+      name: APP_NAME-pdb
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-pdb
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1name
+        value: api-gateway-staging
+
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: APP_NAME-hpa
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-hpa
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/scaleTargetRef/name
+        value: api-gateway-staging
+
+  - target:
+      kind: ServiceMonitor
+      name: APP_NAME-monitor
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-monitor
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/selector/matchLabels/app.kubernetes.io~1name
+        value: api-gateway-staging
+
+  - target:
+      kind: NetworkPolicy
+      name: APP_NAME-allow-from-same-namespace
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-allow-from-same-namespace
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/podSelector/matchLabels/app.kubernetes.io~1name
+        value: api-gateway-staging
+
+  - target:
+      kind: NetworkPolicy
+      name: APP_NAME-allow-from-monitoring-namespace
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: api-gateway-staging-allow-from-monitoring-namespace
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: api-gateway-staging
+      - op: replace
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: microservices-demo
+      - op: replace
+        path: /spec/podSelector/matchLabels/app.kubernetes.io~1name
+        value: api-gateway-staging

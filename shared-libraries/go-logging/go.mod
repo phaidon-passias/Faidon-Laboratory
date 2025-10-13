@@ -1,6 +1,6 @@
 module github.com/faidon-laboratory/go-logging
 
-go 1.24.3
+go 1.23
 
 require (
 	go.opentelemetry.io/otel v1.38.0
