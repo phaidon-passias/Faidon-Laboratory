@@ -1,3 +1,2 @@
 flask==3.0.3
 prometheus_client==0.20.0
--e ../../shared-libraries/python-logging
