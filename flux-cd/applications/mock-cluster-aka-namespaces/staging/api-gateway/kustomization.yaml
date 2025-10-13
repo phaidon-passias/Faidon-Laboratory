@@ -147,6 +147,9 @@ patches:
       - op: replace
         path: /data/service_name
         value: api-gateway-staging
+      - op: replace
+        path: /data/environment
+        value: staging
 
   - target:
       kind: Role

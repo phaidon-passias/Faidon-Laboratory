@@ -147,6 +147,9 @@ patches:
       - op: replace
         path: /data/service_name
         value: user-service-production
+      - op: replace
+        path: /data/environment
+        value: production
 
   - target:
       kind: Role
