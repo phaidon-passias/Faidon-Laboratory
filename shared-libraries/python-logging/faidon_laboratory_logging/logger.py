@@ -72,7 +72,7 @@ class Logger:
         try:
             # Create OTLP trace exporter
             trace_exporter = OTLPSpanExporter(
-                endpoint=f"http://{alloy_url}",
+                endpoint=f"http://{alloy_url}/v1/traces",
             )
             
             # Create tracer provider
@@ -96,7 +96,7 @@ class Logger:
         try:
             # Create OTLP metric exporter
             metric_exporter = OTLPMetricExporter(
-                endpoint=f"http://{alloy_url}",
+                endpoint=f"http://{alloy_url}/v1/metrics",
             )
             
             # Create meter provider
