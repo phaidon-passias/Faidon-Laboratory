@@ -8,9 +8,6 @@ resources:
   - configmap.yaml
   - helmrelease.yaml
 
-patchesStrategicMerge:
-  - tempo-config-patch.yaml
-
 namespace: monitoring
 
 labels:

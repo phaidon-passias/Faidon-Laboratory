@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: faidon-laboratory-logging
+Version: 0.1.0
+Summary: Structured logging library with OpenTelemetry integration
+Home-page: https://github.com/faidon-laboratory/python-logging
+Author: Faidon Laboratory
+Author-email: faidon@example.com
+License: UNKNOWN
+Platform: UNKNOWN
+Requires-Python: >=3.8
+
+UNKNOWN
+
