@@ -94,14 +94,19 @@ data:
         type: ClusterIP
         port: 3200
       # Enable OTLP receivers for OpenTelemetry data
-      distributor:
-        receivers:
-          otlp:
-            protocols:
-              grpc:
-                endpoint: 0.0.0.0:4317
-              http:
-                endpoint: 0.0.0.0:4318
+      traces:
+        otlp:
+          grpc:
+            enabled: true
+          http:
+            enabled: true
+        zipkin:
+          enabled: false
+        jaeger:
+          thriftHttp:
+            enabled: false
+        opencensus:
+          enabled: false
     
     # Mimir configuration (for metrics - Prometheus-compatible)
     mimir:
