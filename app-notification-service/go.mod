@@ -1,10 +1,9 @@
-module demo-app-go
+module demo-app-notification-service
 
-go 1.23.0
-
-toolchain go1.24.3
+go 1.24.3
 
 require (
+	github.com/faidon-laboratory/go-logging v0.1.0
 	github.com/gorilla/mux v1.8.1
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.38.0
@@ -14,6 +13,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
 )
+
+replace github.com/faidon-laboratory/go-logging => ../shared-libraries/go-logging
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
