@@ -4,7 +4,7 @@ metadata:
   name: APP_NAME-hpa
   labels:
     app.kubernetes.io/name: APP_NAME
-    app.kubernetes.io/part-of: APP_NAME-multi-language
+    app.kubernetes.io/part-of: microservices-demo
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

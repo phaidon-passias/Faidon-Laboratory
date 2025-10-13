@@ -4,7 +4,7 @@ metadata:
   name: APP_NAME-monitor
   labels:
     app.kubernetes.io/name: APP_NAME
-    app.kubernetes.io/part-of: APP_NAME-multi-language
+    app.kubernetes.io/part-of: microservices-demo
     app.kubernetes.io/component: application
     app.kubernetes.io/version: v1.0.0
     # This label is important - Prometheus looks for ServiceMonitors with this label
@@ -13,7 +13,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: APP_NAME
-      app.kubernetes.io/part-of: APP_NAME-multi-language
+      app.kubernetes.io/part-of: microservices-demo
   endpoints:
   - port: http
     path: /metrics

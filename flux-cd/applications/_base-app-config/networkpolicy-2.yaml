@@ -4,12 +4,12 @@ metadata:
   name: APP_NAME-allow-from-monitoring-namespace
   labels:
     app.kubernetes.io/name: APP_NAME
-    app.kubernetes.io/part-of: APP_NAME-multi-language
+    app.kubernetes.io/part-of: microservices-demo
 spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/name: APP_NAME
-      app.kubernetes.io/part-of: APP_NAME-multi-language
+      app.kubernetes.io/part-of: microservices-demo
   policyTypes:
     - Ingress
   ingress:

@@ -4,7 +4,7 @@ metadata:
   name: APP_NAME
   labels:
     app.kubernetes.io/name: APP_NAME
-    app.kubernetes.io/part-of: APP_NAME-multi-language
+    app.kubernetes.io/part-of: microservices-demo
     app.kubernetes.io/version: v1.0.0
     app.kubernetes.io/component: application
     app.kubernetes.io/managed-by: flux

@@ -4,7 +4,7 @@ metadata:
   name: APP_NAME-config
   labels:
     app.kubernetes.io/name: APP_NAME
-    app.kubernetes.io/part-of: APP_NAME-multi-language
+    app.kubernetes.io/part-of: microservices-demo
     app.kubernetes.io/version: v1.0.0
     app.kubernetes.io/component: application
     app.kubernetes.io/managed-by: flux
@@ -19,5 +19,5 @@ data:
   environment: "development"
   alloy_url: "grafana-alloy.monitoring.svc.cluster.local:4318"
   # Service-to-service communication URLs (for API Gateway)
-  user_service_url: "http://demo-app-python:80"
+  user_service_url: "http://user-service:80"
   notification_service_url: "http://notification-service:80"
