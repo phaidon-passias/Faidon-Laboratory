@@ -12,6 +12,7 @@ metadata:
     app.kubernetes.io/tier: monitoring
 spec:
   interval: 1m
+  timeout: 15m
   chart:
     spec:
       chart: lgtm-distributed
