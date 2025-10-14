@@ -104,6 +104,10 @@ data:
         replicas: 2
       ingester:
         replicas: 2
+      # Override Tempo configuration for single-replica mode
+      config:
+        ingester:
+          replication_factor: 1
       # Enable OTLP receivers for OpenTelemetry data
       traces:
         otlp:
