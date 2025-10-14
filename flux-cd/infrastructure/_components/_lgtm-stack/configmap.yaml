@@ -105,7 +105,7 @@ data:
       ingester:
         replicas: 2
       # Override Tempo configuration for single-replica mode
-      config:
+      config: |
         querier:
           frontend_worker:
             frontend_address: "lgtm-stack-tempo-query-frontend:9095"
