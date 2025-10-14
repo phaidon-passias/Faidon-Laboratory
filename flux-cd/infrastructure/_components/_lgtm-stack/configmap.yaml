@@ -106,6 +106,9 @@ data:
         replicas: 2
       # Override Tempo configuration for single-replica mode
       config:
+        querier:
+          frontend_worker:
+            frontend_address: lgtm-stack-tempo-query-frontend:9095
         ingester:
           replication_factor: 1
       # Enable OTLP receivers for OpenTelemetry data
