@@ -273,16 +273,16 @@ patches:
     patch: |-
       - op: replace
         path: /spec/replicas
-        value: 1
+        value: 2
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/cpu
-        value: 50m
+        value: 120m
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/memory
         value: 128Mi
       - op: replace
         path: /spec/template/spec/containers/0/resources/limits/cpu
-        value: 200m
+        value: 250m
       - op: replace
         path: /spec/template/spec/containers/0/resources/limits/memory
         value: 256Mi
@@ -294,7 +294,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/minReplicas
-        value: 1
+        value: 2
       - op: replace
         path: /spec/maxReplicas
-        value: 3
+        value: 4
