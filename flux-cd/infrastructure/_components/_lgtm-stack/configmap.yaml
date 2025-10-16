@@ -75,6 +75,30 @@ data:
               url: http://lgtm-stack-mimir-nginx:80/prometheus
               access: proxy
               isDefault: true
+      
+      # Enable dashboard provisioning
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+            - name: 'default'
+              orgId: 1
+              folder: ''
+              type: file
+              disableDeletion: false
+              editable: true
+              options:
+                path: /var/lib/grafana/dashboards/default
+      
+      # Mount dashboard ConfigMaps
+      extraVolumes:
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
+      extraVolumeMounts:
+        - name: dashboards
+          mountPath: /var/lib/grafana/dashboards/default
+          readOnly: true
     
     # Tempo configuration (for traces)
     tempo:

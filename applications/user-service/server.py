@@ -137,6 +137,133 @@ def get_user(user_id):
             logger.count_request(f"/users/{user_id}", 500)
             return jsonify({"ok": False, "error": "Internal server error"}), 500
 
+@app.route("/users", methods=["POST"])
+def create_user():
+    """Create a new user"""
+    with logger.start_span("create_user") as span:
+        start_time = time.time()
+        processing_duration = random.uniform(0.1, 0.3)
+        
+        try:
+            # Get request data
+            data = request.get_json()
+            if not data or 'name' not in data or 'email' not in data:
+                logger.warn("Invalid user creation request", 
+                           method=request.method,
+                           endpoint="/users",
+                           user_agent=request.headers.get('User-Agent', ''))
+                logger.count_request("/users", 400)
+                return jsonify({"ok": False, "error": "Name and email are required"}), 400
+            
+            # Simulate user creation processing
+            time.sleep(processing_duration)
+            
+            if random.random() < FAIL_RATE:
+                logger.error("User creation failed", 
+                           Exception("simulated user creation failure"),
+                           method=request.method,
+                           endpoint="/users",
+                           name=data.get('name'),
+                           email=data.get('email'),
+                           user_agent=request.headers.get('User-Agent', ''),
+                           processing_duration_ms=processing_duration * 1000)
+                
+                logger.count_request("/users", 500)
+                return jsonify({"ok": False, "error": "User creation failed"}), 500
+            
+            # Generate user ID
+            user_id = f"user_{random.randint(1000, 9999)}"
+            
+            # Simulate user data
+            user_data = {
+                "user_id": user_id,
+                "name": data['name'],
+                "email": data['email'],
+                "status": "active",
+                "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "last_login": None
+            }
+            
+            logger.info("User created successfully",
+                       method=request.method,
+                       endpoint="/users",
+                       user_id=user_id,
+                       name=data['name'],
+                       email=data['email'],
+                       user_agent=request.headers.get('User-Agent', ''),
+                       processing_duration_ms=processing_duration * 1000)
+            
+            logger.count_request("/users", 201)
+            return jsonify({"ok": True, "user": user_data}), 201
+            
+        except Exception as e:
+            logger.error("Unexpected error in create_user endpoint", e)
+            logger.count_request("/users", 500)
+            return jsonify({"ok": False, "error": "Internal server error"}), 500
+
+@app.route("/users/<user_id>/profile")
+def get_user_profile(user_id):
+    """Get extended user profile data"""
+    with logger.start_span("get_user_profile") as span:
+        start_time = time.time()
+        processing_duration = random.uniform(0.05, 0.15)
+        
+        try:
+            # Simulate profile lookup
+            time.sleep(processing_duration)
+            
+            if random.random() < FAIL_RATE:
+                logger.error("User profile lookup failed", 
+                           Exception("simulated profile lookup failure"),
+                           method=request.method,
+                           endpoint=f"/users/{user_id}/profile",
+                           user_id=user_id,
+                           user_agent=request.headers.get('User-Agent', ''),
+                           processing_duration_ms=processing_duration * 1000)
+                
+                logger.count_request(f"/users/{user_id}/profile", 500)
+                return jsonify({"ok": False, "error": "Profile lookup failed"}), 500
+            
+            # Simulate extended user profile data
+            profile_data = {
+                "user_id": user_id,
+                "name": f"User {user_id}",
+                "email": f"user{user_id}@example.com",
+                "status": "active",
+                "created_at": "2024-01-01T00:00:00Z",
+                "last_login": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "profile": {
+                    "bio": f"This is the profile for user {user_id}",
+                    "location": "San Francisco, CA",
+                    "website": f"https://example.com/users/{user_id}",
+                    "preferences": {
+                        "theme": "dark",
+                        "notifications": True,
+                        "language": "en"
+                    },
+                    "stats": {
+                        "posts": random.randint(10, 100),
+                        "followers": random.randint(50, 500),
+                        "following": random.randint(20, 200)
+                    }
+                }
+            }
+            
+            logger.info("User profile retrieved successfully",
+                       method=request.method,
+                       endpoint=f"/users/{user_id}/profile",
+                       user_id=user_id,
+                       user_agent=request.headers.get('User-Agent', ''),
+                       processing_duration_ms=processing_duration * 1000)
+            
+            logger.count_request(f"/users/{user_id}/profile", 200)
+            return jsonify({"ok": True, "profile": profile_data}), 200
+            
+        except Exception as e:
+            logger.error("Unexpected error in get_user_profile endpoint", e, user_id=user_id)
+            logger.count_request(f"/users/{user_id}/profile", 500)
+            return jsonify({"ok": False, "error": "Internal server error"}), 500
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     

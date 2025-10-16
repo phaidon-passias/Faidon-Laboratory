@@ -215,6 +215,155 @@ func truncateString(s string, maxLen int) string {
 	return s[:maxLen] + "..."
 }
 
+// Get notifications - throughput SLI endpoint
+func getNotificationsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, endSpan := logger.StartSpan(r.Context(), "get_notifications")
+	defer endSpan()
+
+	start := time.Now()
+
+	logger.Info(ctx, "Getting notifications", map[string]interface{}{
+		"method": r.Method,
+	})
+
+	// Simulate notification retrieval
+	processingDuration := time.Duration(50+rand.Intn(100)) * time.Millisecond
+	time.Sleep(processingDuration)
+
+	// Simulate failure
+	if rand.Float64() < failRate {
+		logger.Error(ctx, "Failed to retrieve notifications",
+			fmt.Errorf("simulated notification retrieval failure"),
+			map[string]interface{}{
+				"processing_duration_ms": processingDuration.Milliseconds(),
+			})
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":    false,
+			"error": "Failed to retrieve notifications",
+		})
+
+		logger.CountRequest(ctx, "/notifications", 500)
+		logger.RecordDuration(ctx, "/notifications", time.Since(start))
+		return
+	}
+
+	// Simulate notification data
+	notifications := []map[string]interface{}{
+		{
+			"id":        fmt.Sprintf("notif_%d", rand.Intn(1000)),
+			"user_id":   fmt.Sprintf("user_%d", rand.Intn(100)),
+			"message":   "Welcome to our service!",
+			"channel":   "email",
+			"priority":  "normal",
+			"status":    "sent",
+			"sent_at":   time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
+		},
+		{
+			"id":        fmt.Sprintf("notif_%d", rand.Intn(1000)),
+			"user_id":   fmt.Sprintf("user_%d", rand.Intn(100)),
+			"message":   "Your order has been processed",
+			"channel":   "sms",
+			"priority":  "high",
+			"status":    "delivered",
+			"sent_at":   time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
+		},
+		{
+			"id":        fmt.Sprintf("notif_%d", rand.Intn(1000)),
+			"user_id":   fmt.Sprintf("user_%d", rand.Intn(100)),
+			"message":   "Weekly digest available",
+			"channel":   "push",
+			"priority":  "low",
+			"status":    "pending",
+			"sent_at":   time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
+		},
+	}
+
+	logger.Info(ctx, "Notifications retrieved successfully", map[string]interface{}{
+		"count":         len(notifications),
+		"duration_ms":   time.Since(start).Milliseconds(),
+		"processing_ms": processingDuration.Milliseconds(),
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":             true,
+		"notifications":  notifications,
+		"total_count":    len(notifications),
+		"retrieved_at":   time.Now().UTC().Format(time.RFC3339),
+	})
+
+	logger.CountRequest(ctx, "/notifications", 200)
+	logger.RecordDuration(ctx, "/notifications", time.Since(start))
+}
+
+// Get notification status - availability SLI endpoint
+func getNotificationStatusHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, endSpan := logger.StartSpan(r.Context(), "get_notification_status")
+	defer endSpan()
+
+	start := time.Now()
+
+	logger.Info(ctx, "Getting notification status", map[string]interface{}{
+		"method": r.Method,
+	})
+
+	// Simulate status check
+	processingDuration := time.Duration(30+rand.Intn(50)) * time.Millisecond
+	time.Sleep(processingDuration)
+
+	// Simulate failure
+	if rand.Float64() < failRate {
+		logger.Error(ctx, "Failed to get notification status",
+			fmt.Errorf("simulated status check failure"),
+			map[string]interface{}{
+				"processing_duration_ms": processingDuration.Milliseconds(),
+			})
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":    false,
+			"error": "Failed to get notification status",
+		})
+
+		logger.CountRequest(ctx, "/notifications/status", 500)
+		logger.RecordDuration(ctx, "/notifications/status", time.Since(start))
+		return
+	}
+
+	// Simulate status data
+	status := map[string]interface{}{
+		"service_status": "healthy",
+		"queue_size":     rand.Intn(100),
+		"pending_count":  rand.Intn(50),
+		"sent_today":     rand.Intn(1000),
+		"failed_today":   rand.Intn(10),
+		"uptime_seconds": time.Since(startTime).Seconds(),
+		"last_updated":   time.Now().UTC().Format(time.RFC3339),
+	}
+
+	logger.Info(ctx, "Notification status retrieved successfully", map[string]interface{}{
+		"duration_ms":   time.Since(start).Milliseconds(),
+		"processing_ms": processingDuration.Milliseconds(),
+		"queue_size":    status["queue_size"],
+		"pending_count": status["pending_count"],
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":     true,
+		"status": status,
+	})
+
+	logger.CountRequest(ctx, "/notifications/status", 200)
+	logger.RecordDuration(ctx, "/notifications/status", time.Since(start))
+}
+
 func main() {
 	port := getEnvString("PORT", "8000")
 
@@ -225,6 +374,8 @@ func main() {
 	r.HandleFunc("/healthz", healthzHandler).Methods("GET")
 	r.HandleFunc("/readyz", readyzHandler).Methods("GET")
 	r.HandleFunc("/notifications/send", sendNotificationHandler).Methods("POST")
+	r.HandleFunc("/notifications", getNotificationsHandler).Methods("GET")
+	r.HandleFunc("/notifications/status", getNotificationStatusHandler).Methods("GET")
 
 	// Start server
 	logger.Info(context.Background(), "Notification service started successfully", map[string]interface{}{

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -335,6 +336,307 @@ func callNotificationService(ctx context.Context, userID, message string, userSe
 	return string(body), nil
 }
 
+// Business-level API handlers for SLI tracking
+
+// Get user by ID - latency SLI endpoint
+func getUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, endSpan := logger.StartSpan(r.Context(), "get_user")
+	defer endSpan()
+
+	start := time.Now()
+	vars := mux.Vars(r)
+	userID := vars["id"]
+
+	logger.Info(ctx, "Getting user", map[string]interface{}{
+		"user_id": userID,
+		"method":  r.Method,
+	})
+
+	// Call user service to get user data
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, "GET", userServiceURL+"/users/"+userID, nil)
+	if err != nil {
+		logger.Error(ctx, "Failed to create user service request", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Internal server error"})
+		logger.CountRequest(ctx, "/api/users/{id}", 500)
+		logger.RecordDuration(ctx, "/api/users/{id}", time.Since(start))
+		return
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error(ctx, "User service request failed", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "User service unavailable"})
+		logger.CountRequest(ctx, "/api/users/{id}", 503)
+		logger.RecordDuration(ctx, "/api/users/{id}", time.Since(start))
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error(ctx, "Failed to read user service response", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Internal server error"})
+		logger.CountRequest(ctx, "/api/users/{id}", 500)
+		logger.RecordDuration(ctx, "/api/users/{id}", time.Since(start))
+		return
+	}
+
+	if resp.StatusCode == 404 {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "User not found"})
+		logger.CountRequest(ctx, "/api/users/{id}", 404)
+		logger.RecordDuration(ctx, "/api/users/{id}", time.Since(start))
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "User service error"})
+		logger.CountRequest(ctx, "/api/users/{id}", 500)
+		logger.RecordDuration(ctx, "/api/users/{id}", time.Since(start))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+
+	logger.Info(ctx, "User retrieved successfully", map[string]interface{}{
+		"user_id": userID,
+		"duration_ms": time.Since(start).Milliseconds(),
+	})
+	logger.CountRequest(ctx, "/api/users/{id}", 200)
+	logger.RecordDuration(ctx, "/api/users/{id}", time.Since(start))
+}
+
+// Create user - availability SLI endpoint
+func createUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, endSpan := logger.StartSpan(r.Context(), "create_user")
+	defer endSpan()
+
+	start := time.Now()
+
+	var req struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Error(ctx, "Failed to parse create user request", err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Invalid request body"})
+		logger.CountRequest(ctx, "/api/users", 400)
+		logger.RecordDuration(ctx, "/api/users", time.Since(start))
+		return
+	}
+
+	logger.Info(ctx, "Creating user", map[string]interface{}{
+		"name":  req.Name,
+		"email": req.Email,
+	})
+
+	// Call user service to create user
+	client := &http.Client{Timeout: 5 * time.Second}
+	reqBody := map[string]interface{}{
+		"name":  req.Name,
+		"email": req.Email,
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		logger.Error(ctx, "Failed to marshal create user request", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Internal server error"})
+		logger.CountRequest(ctx, "/api/users", 500)
+		logger.RecordDuration(ctx, "/api/users", time.Since(start))
+		return
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", userServiceURL+"/users", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		logger.Error(ctx, "Failed to create user service request", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Internal server error"})
+		logger.CountRequest(ctx, "/api/users", 500)
+		logger.RecordDuration(ctx, "/api/users", time.Since(start))
+		return
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		logger.Error(ctx, "User service request failed", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "User service unavailable"})
+		logger.CountRequest(ctx, "/api/users", 503)
+		logger.RecordDuration(ctx, "/api/users", time.Since(start))
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error(ctx, "Failed to read user service response", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Internal server error"})
+		logger.CountRequest(ctx, "/api/users", 500)
+		logger.RecordDuration(ctx, "/api/users", time.Since(start))
+		return
+	}
+
+	if resp.StatusCode != 201 && resp.StatusCode != 200 {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "User creation failed"})
+		logger.CountRequest(ctx, "/api/users", 500)
+		logger.RecordDuration(ctx, "/api/users", time.Since(start))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(body)
+
+	logger.Info(ctx, "User created successfully", map[string]interface{}{
+		"name":        req.Name,
+		"email":       req.Email,
+		"duration_ms": time.Since(start).Milliseconds(),
+	})
+	logger.CountRequest(ctx, "/api/users", 201)
+	logger.RecordDuration(ctx, "/api/users", time.Since(start))
+}
+
+// Get notifications - throughput SLI endpoint
+func getNotificationsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, endSpan := logger.StartSpan(r.Context(), "get_notifications")
+	defer endSpan()
+
+	start := time.Now()
+
+	logger.Info(ctx, "Getting notifications", map[string]interface{}{
+		"method": r.Method,
+	})
+
+	// Call notification service to get notifications
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, "GET", notificationServiceURL+"/notifications", nil)
+	if err != nil {
+		logger.Error(ctx, "Failed to create notification service request", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Internal server error"})
+		logger.CountRequest(ctx, "/api/notifications", 500)
+		logger.RecordDuration(ctx, "/api/notifications", time.Since(start))
+		return
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error(ctx, "Notification service request failed", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Notification service unavailable"})
+		logger.CountRequest(ctx, "/api/notifications", 503)
+		logger.RecordDuration(ctx, "/api/notifications", time.Since(start))
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error(ctx, "Failed to read notification service response", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Internal server error"})
+		logger.CountRequest(ctx, "/api/notifications", 500)
+		logger.RecordDuration(ctx, "/api/notifications", time.Since(start))
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Notification service error"})
+		logger.CountRequest(ctx, "/api/notifications", 500)
+		logger.RecordDuration(ctx, "/api/notifications", time.Since(start))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+
+	logger.Info(ctx, "Notifications retrieved successfully", map[string]interface{}{
+		"duration_ms": time.Since(start).Milliseconds(),
+	})
+	logger.CountRequest(ctx, "/api/notifications", 200)
+	logger.RecordDuration(ctx, "/api/notifications", time.Since(start))
+}
+
+// Process workflow - success rate SLI endpoint
+func processWorkflowHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, endSpan := logger.StartSpan(r.Context(), "process_workflow")
+	defer endSpan()
+
+	start := time.Now()
+
+	var req struct {
+		WorkflowID string `json:"workflow_id"`
+		Data       string `json:"data"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Error(ctx, "Failed to parse workflow request", err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "Invalid request body"})
+		logger.CountRequest(ctx, "/api/process", 400)
+		logger.RecordDuration(ctx, "/api/process", time.Since(start))
+		return
+	}
+
+	logger.Info(ctx, "Processing workflow", map[string]interface{}{
+		"workflow_id": req.WorkflowID,
+	})
+
+	// Simulate workflow processing with potential failure
+	if rand.Float64() < failRate {
+		logger.Error(ctx, "Workflow processing failed", fmt.Errorf("simulated workflow failure"), map[string]interface{}{
+			"workflow_id": req.WorkflowID,
+		})
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":    false,
+			"error": "Workflow processing failed",
+		})
+		logger.CountRequest(ctx, "/api/process", 500)
+		logger.RecordDuration(ctx, "/api/process", time.Since(start))
+		return
+	}
+
+	// Simulate processing time
+	processingTime := time.Duration(50+rand.Intn(100)) * time.Millisecond
+	time.Sleep(processingTime)
+
+	result := map[string]interface{}{
+		"ok":          true,
+		"workflow_id": req.WorkflowID,
+		"status":      "completed",
+		"processed_at": time.Now().UTC().Format(time.RFC3339),
+		"duration_ms": time.Since(start).Milliseconds(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
+
+	logger.Info(ctx, "Workflow processed successfully", map[string]interface{}{
+		"workflow_id":   req.WorkflowID,
+		"duration_ms":   time.Since(start).Milliseconds(),
+		"processing_ms": processingTime.Milliseconds(),
+	})
+	logger.CountRequest(ctx, "/api/process", 200)
+	logger.RecordDuration(ctx, "/api/process", time.Since(start))
+}
+
 func main() {
 	port := getEnvString("PORT", "8000")
 
@@ -345,6 +647,12 @@ func main() {
 	r.HandleFunc("/healthz", healthzHandler).Methods("GET")
 	r.HandleFunc("/readyz", readyzHandler).Methods("GET")
 	r.HandleFunc("/process-user", processUserHandler).Methods("POST")
+	
+	// Business-level API endpoints for SLI tracking
+	r.HandleFunc("/api/users/{id}", getUserHandler).Methods("GET")
+	r.HandleFunc("/api/users", createUserHandler).Methods("POST")
+	r.HandleFunc("/api/notifications", getNotificationsHandler).Methods("GET")
+	r.HandleFunc("/api/process", processWorkflowHandler).Methods("POST")
 
 	// Start server
 	logger.Info(context.Background(), "API Gateway started successfully", map[string]interface{}{
