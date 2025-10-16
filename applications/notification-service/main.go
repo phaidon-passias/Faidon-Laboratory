@@ -253,31 +253,31 @@ func getNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	// Simulate notification data
 	notifications := []map[string]interface{}{
 		{
-			"id":        fmt.Sprintf("notif_%d", rand.Intn(1000)),
-			"user_id":   fmt.Sprintf("user_%d", rand.Intn(100)),
-			"message":   "Welcome to our service!",
-			"channel":   "email",
-			"priority":  "normal",
-			"status":    "sent",
-			"sent_at":   time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
+			"id":       fmt.Sprintf("notif_%d", rand.Intn(1000)),
+			"user_id":  fmt.Sprintf("user_%d", rand.Intn(100)),
+			"message":  "Welcome to our service!",
+			"channel":  "email",
+			"priority": "normal",
+			"status":   "sent",
+			"sent_at":  time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
 		},
 		{
-			"id":        fmt.Sprintf("notif_%d", rand.Intn(1000)),
-			"user_id":   fmt.Sprintf("user_%d", rand.Intn(100)),
-			"message":   "Your order has been processed",
-			"channel":   "sms",
-			"priority":  "high",
-			"status":    "delivered",
-			"sent_at":   time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
+			"id":       fmt.Sprintf("notif_%d", rand.Intn(1000)),
+			"user_id":  fmt.Sprintf("user_%d", rand.Intn(100)),
+			"message":  "Your order has been processed",
+			"channel":  "sms",
+			"priority": "high",
+			"status":   "delivered",
+			"sent_at":  time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
 		},
 		{
-			"id":        fmt.Sprintf("notif_%d", rand.Intn(1000)),
-			"user_id":   fmt.Sprintf("user_%d", rand.Intn(100)),
-			"message":   "Weekly digest available",
-			"channel":   "push",
-			"priority":  "low",
-			"status":    "pending",
-			"sent_at":   time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
+			"id":       fmt.Sprintf("notif_%d", rand.Intn(1000)),
+			"user_id":  fmt.Sprintf("user_%d", rand.Intn(100)),
+			"message":  "Weekly digest available",
+			"channel":  "push",
+			"priority": "low",
+			"status":   "pending",
+			"sent_at":  time.Now().Add(-time.Duration(rand.Intn(3600)) * time.Second).UTC().Format(time.RFC3339),
 		},
 	}
 
@@ -290,10 +290,10 @@ func getNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ok":             true,
-		"notifications":  notifications,
-		"total_count":    len(notifications),
-		"retrieved_at":   time.Now().UTC().Format(time.RFC3339),
+		"ok":            true,
+		"notifications": notifications,
+		"total_count":   len(notifications),
+		"retrieved_at":  time.Now().UTC().Format(time.RFC3339),
 	})
 
 	logger.CountRequest(ctx, "/notifications", 200)

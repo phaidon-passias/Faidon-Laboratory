@@ -406,7 +406,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 
 	logger.Info(ctx, "User retrieved successfully", map[string]interface{}{
-		"user_id": userID,
+		"user_id":     userID,
 		"duration_ms": time.Since(start).Milliseconds(),
 	})
 	logger.CountRequest(ctx, "/api/users/{id}", 200)
@@ -617,11 +617,11 @@ func processWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(processingTime)
 
 	result := map[string]interface{}{
-		"ok":          true,
-		"workflow_id": req.WorkflowID,
-		"status":      "completed",
+		"ok":           true,
+		"workflow_id":  req.WorkflowID,
+		"status":       "completed",
 		"processed_at": time.Now().UTC().Format(time.RFC3339),
-		"duration_ms": time.Since(start).Milliseconds(),
+		"duration_ms":  time.Since(start).Milliseconds(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -647,7 +647,7 @@ func main() {
 	r.HandleFunc("/healthz", healthzHandler).Methods("GET")
 	r.HandleFunc("/readyz", readyzHandler).Methods("GET")
 	r.HandleFunc("/process-user", processUserHandler).Methods("POST")
-	
+
 	// Business-level API endpoints for SLI tracking
 	r.HandleFunc("/api/users/{id}", getUserHandler).Methods("GET")
 	r.HandleFunc("/api/users", createUserHandler).Methods("POST")

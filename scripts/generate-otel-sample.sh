@@ -66,22 +66,48 @@ generate_samples_in_namespace() {
         }' \
         && echo 'HTTP trace sent to ${namespace}'; sleep 1" || echo "Failed to create trace in ${namespace}"
     
-    # Trigger services if they exist in this namespace
-    echo "[generate-otel-sample] Triggering services in ${namespace}..."
-    kubectl -n "${namespace}" run "service-trigger-${namespace}-$$" \
+    # Trigger all new business endpoints to generate comprehensive telemetry
+    echo "[generate-otel-sample] Triggering comprehensive business workflows in ${namespace}..."
+    kubectl -n "${namespace}" run "business-workflow-${namespace}-$$" \
       --image=curlimages/curl:latest \
       --restart=Never \
       --command -- sh -c \
-      "echo 'Triggering API Gateway /process-user endpoint in ${namespace}...' && \
-       curl -X POST http://api-gateway-${namespace}.${namespace}.svc.cluster.local:8080/process-user \
+      "echo '=== API Gateway Business Endpoints ===' && \
+       echo '1. Creating user via API Gateway...' && \
+       curl -X POST http://api-gateway-${namespace}.${namespace}.svc.cluster.local:8080/api/users \
          -H 'Content-Type: application/json' \
-         -d '{\"user_id\":\"test-user-${namespace}\",\"action\":\"create\",\"message\":\"Test message from generate-otel-sample in ${namespace}\"}' \
-         -s || echo 'API Gateway process-user failed in ${namespace}' && \
-       echo 'Triggering user-service health check in ${namespace}...' && \
-       curl -s http://user-service-${namespace}.${namespace}.svc.cluster.local:8000/health || echo 'user-service health check failed in ${namespace}' && \
-       echo 'Triggering notification-service health check in ${namespace}...' && \
-       curl -s http://notification-service-${namespace}.${namespace}.svc.cluster.local:8000/health || echo 'notification-service health check failed in ${namespace}' && \
-       echo 'All service calls completed in ${namespace}'; sleep 2" || echo "Failed to trigger services in ${namespace}"
+         -d '{\"name\":\"Test User ${namespace}\",\"email\":\"test-${namespace}@example.com\",\"role\":\"user\"}' \
+         -s -w 'Status: %{http_code}\n' || echo 'User creation failed' && \
+       echo '2. Getting user profile...' && \
+       curl -X GET http://api-gateway-${namespace}.${namespace}.svc.cluster.local:8080/api/users/123 \
+         -s -w 'Status: %{http_code}\n' || echo 'User lookup failed' && \
+       echo '3. Getting notifications...' && \
+       curl -X GET http://api-gateway-${namespace}.${namespace}.svc.cluster.local:8080/api/notifications \
+         -s -w 'Status: %{http_code}\n' || echo 'Notifications fetch failed' && \
+       echo '4. Processing business workflow...' && \
+       curl -X POST http://api-gateway-${namespace}.${namespace}.svc.cluster.local:8080/api/process \
+         -H 'Content-Type: application/json' \
+         -d '{\"workflow_id\":\"test-workflow-${namespace}\",\"priority\":\"high\",\"data\":{\"amount\":1000}}' \
+         -s -w 'Status: %{http_code}\n' || echo 'Workflow processing failed' && \
+       echo '=== Direct Service Endpoints ===' && \
+       echo '5. User Service - Create user...' && \
+       curl -X POST http://user-service-${namespace}.${namespace}.svc.cluster.local:8000/users \
+         -H 'Content-Type: application/json' \
+         -d '{\"name\":\"Direct User ${namespace}\",\"email\":\"direct-${namespace}@example.com\"}' \
+         -s -w 'Status: %{http_code}\n' || echo 'Direct user creation failed' && \
+       echo '6. User Service - Get user profile...' && \
+       curl -X GET http://user-service-${namespace}.${namespace}.svc.cluster.local:8000/users/456/profile \
+         -s -w 'Status: %{http_code}\n' || echo 'User profile fetch failed' && \
+       echo '7. Notification Service - Get notifications...' && \
+       curl -X GET http://notification-service-${namespace}.${namespace}.svc.cluster.local:8000/notifications \
+         -s -w 'Status: %{http_code}\n' || echo 'Direct notifications fetch failed' && \
+       echo '8. Notification Service - Get status...' && \
+       curl -X GET http://notification-service-${namespace}.${namespace}.svc.cluster.local:8000/notifications/status \
+         -s -w 'Status: %{http_code}\n' || echo 'Notification status failed' && \
+       echo '9. Health checks...' && \
+       curl -s http://user-service-${namespace}.${namespace}.svc.cluster.local:8000/health -w 'User Service: %{http_code}\n' || echo 'User service health failed' && \
+       curl -s http://notification-service-${namespace}.${namespace}.svc.cluster.local:8000/health -w 'Notification Service: %{http_code}\n' || echo 'Notification service health failed' && \
+       echo '=== Business Workflow Complete ==='; sleep 3" || echo "Failed to trigger business workflows in ${namespace}"
     
     # Generate sample logs
     echo "[generate-otel-sample] Emitting sample logs in ${namespace}..."
@@ -94,7 +120,7 @@ generate_samples_in_namespace() {
     # Clean up pods after a short delay
     sleep 3
     kubectl -n "${namespace}" delete pod "otel-http-trace-${namespace}-$$" --ignore-not-found 2>/dev/null || true
-    kubectl -n "${namespace}" delete pod "service-trigger-${namespace}-$$" --ignore-not-found 2>/dev/null || true
+    kubectl -n "${namespace}" delete pod "business-workflow-${namespace}-$$" --ignore-not-found 2>/dev/null || true
     kubectl -n "${namespace}" delete pod "log-generator-${namespace}-$$" --ignore-not-found 2>/dev/null || true
     
     echo "[generate-otel-sample] ✓ Completed samples for ${namespace}"
@@ -106,5 +132,16 @@ for namespace in "${NAMESPACES[@]}"; do
     generate_samples_in_namespace "${namespace}"
 done
 
-echo "[generate-otel-sample] 🎉 Done generating samples across all namespaces!"
-echo "[generate-otel-sample] Check Grafana (http://localhost:3000) for traces, logs, and metrics."
+echo "[generate-otel-sample] 🎉 Done generating comprehensive business workflow samples across all namespaces!"
+echo "[generate-otel-sample] Generated telemetry for:"
+echo "  • API Gateway business endpoints (user CRUD, notifications, workflows)"
+echo "  • Direct service endpoints (user profiles, notification status)"
+echo "  • Health checks and synthetic traces"
+echo "  • Sample logs and metrics"
+echo ""
+echo "[generate-otel-sample] Check Grafana (http://localhost:3000) for:"
+echo "  • SLI Overview dashboard - success rates, latency, error budgets"
+echo "  • Service Health dashboard - CPU, memory, restarts"
+echo "  • Business KPIs - request rates and endpoint usage"
+echo ""
+echo "[generate-otel-sample] Use: kubectl port-forward -n monitoring svc/lgtm-stack-grafana 3000:80"
