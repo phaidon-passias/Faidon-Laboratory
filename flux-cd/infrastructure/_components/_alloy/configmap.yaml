@@ -34,6 +34,44 @@ data:
       detectors = ["env", "system"]
       
       output {
+        metrics = [otelcol.processor.filter.health_check_filter.input]
+        logs    = [otelcol.processor.filter.health_check_filter.input]
+        traces  = [otelcol.processor.filter.health_check_filter.input]
+      }
+    }
+
+    // Step 1.5: Filter out health check endpoints from traces
+    otelcol.processor.filter "health_check_filter" {
+      traces {
+        span {
+          // Drop traces from health check endpoints
+          drop {
+            match_type = "regexp"
+            attributes {
+              key = "http.route"
+              value = "/(healthz|readyz|health|ready)$"
+            }
+          }
+          // Also drop by URL path if route is not available
+          drop {
+            match_type = "regexp"
+            attributes {
+              key = "http.url"
+              value = ".*/(healthz|readyz|health|ready)$"
+            }
+          }
+          // Drop by span name patterns
+          drop {
+            match_type = "regexp"
+            attributes {
+              key = "name"
+              value = ".*(healthz|readyz|health|ready).*"
+            }
+          }
+        }
+      }
+      
+      output {
         metrics = [otelcol.processor.transform.namespace_to_env.input]
         logs    = [otelcol.processor.transform.namespace_to_env.input]
         traces  = [otelcol.processor.transform.namespace_to_env.input]
