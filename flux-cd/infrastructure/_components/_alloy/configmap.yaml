@@ -42,32 +42,21 @@ data:
 
     // Step 1.5: Filter out health check endpoints from traces
     otelcol.processor.filter "health_check_filter" {
+      error_mode = "ignore"
+      
       traces {
         span {
-          // Drop traces from health check endpoints
-          drop {
-            match_type = "regexp"
-            attributes {
-              key = "http.route"
-              value = "/(healthz|readyz|health|ready)$"
-            }
-          }
-          // Also drop by URL path if route is not available
-          drop {
-            match_type = "regexp"
-            attributes {
-              key = "http.url"
-              value = ".*/(healthz|readyz|health|ready)$"
-            }
-          }
-          // Drop by span name patterns
-          drop {
-            match_type = "regexp"
-            attributes {
-              key = "name"
-              value = ".*(healthz|readyz|health|ready).*"
-            }
-          }
+          // Drop traces from health check endpoints using OTTL expressions
+          "attributes[\"http.route\"] == \"/healthz\"",
+          "attributes[\"http.route\"] == \"/readyz\"",
+          "attributes[\"http.route\"] == \"/health\"",
+          "attributes[\"http.route\"] == \"/ready\"",
+          "attributes[\"http.target\"] == \"/healthz\"",
+          "attributes[\"http.target\"] == \"/readyz\"",
+          "attributes[\"http.target\"] == \"/health\"",
+          "attributes[\"http.target\"] == \"/ready\"",
+          "IsMatch(attributes[\"http.url\"], \".*/(healthz|readyz|health|ready)$\")",
+          "IsMatch(name, \".*(healthz|readyz|health|ready).*\")"
         }
       }
       
