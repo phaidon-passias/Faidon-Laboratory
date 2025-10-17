@@ -47,16 +47,12 @@ data:
       traces {
         span {
           // Drop traces from health check endpoints using OTTL expressions
-          "attributes[\"http.route\"] == \"/healthz\"",
-          "attributes[\"http.route\"] == \"/readyz\"",
-          "attributes[\"http.route\"] == \"/health\"",
-          "attributes[\"http.route\"] == \"/ready\"",
-          "attributes[\"http.target\"] == \"/healthz\"",
-          "attributes[\"http.target\"] == \"/readyz\"",
-          "attributes[\"http.target\"] == \"/health\"",
-          "attributes[\"http.target\"] == \"/ready\"",
-          "IsMatch(attributes[\"http.url\"], \".*/(healthz|readyz|health|ready)$\")",
-          "IsMatch(name, \".*(healthz|readyz|health|ready).*\")"
+          [
+            'IsMatch(attributes["http.route"], "/(healthz|readyz|health|ready)$")',
+            'IsMatch(attributes["http.target"], "/(healthz|readyz|health|ready)$")',
+            'IsMatch(attributes["http.url"], ".*/(healthz|readyz|health|ready)$")',
+            'IsMatch(name, ".*(healthz|readyz|health|ready).*")'
+          ]
         }
       }
       
