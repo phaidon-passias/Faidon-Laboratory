@@ -103,6 +103,9 @@ data:
     # Tempo configuration (for traces)
     tempo:
       enabled: true
+      # Pin to compatible version with Alloy v1.5.1
+      image:
+        tag: "2.4.0"
       persistence:
         enabled: true
         size: 10Gi

@@ -101,10 +101,10 @@ data:
       }
     }
 
-    // Export traces to Tempo via OTLP gRPC
+    // Export traces to Tempo via OTLP HTTP
     otelcol.exporter.otlp "tempo" {
       client {
-        endpoint = "http://lgtm-stack-tempo-distributor.monitoring.svc.cluster.local:4317"
+        endpoint = "http://lgtm-stack-tempo-distributor.monitoring.svc.cluster.local:4318"
         tls {
           insecure = true
         }
