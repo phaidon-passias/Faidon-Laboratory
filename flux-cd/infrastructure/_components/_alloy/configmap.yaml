@@ -108,6 +108,9 @@ data:
         tls {
           insecure = true
         }
+        // Configure HTTP2 settings to handle large frames
+        compression = "gzip"
+        timeout = "30s"
       }
     }
 
