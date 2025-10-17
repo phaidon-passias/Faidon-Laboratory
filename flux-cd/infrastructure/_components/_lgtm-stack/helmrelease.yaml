@@ -21,6 +21,11 @@ spec:
         kind: HelmRepository
         name: grafana
         namespace: monitoring
+  values:
+    # Override Tempo version for Alloy v1.5.1 compatibility
+    tempo:
+      image:
+        tag: "2.4.0"
   valuesFrom:
     - kind: ConfigMap
       name: lgtm-stack-values
