@@ -34,38 +34,15 @@ data:
       detectors = ["env", "system"]
       
       output {
-        metrics = [otelcol.processor.filter.health_check_filter.input]
-        logs    = [otelcol.processor.filter.health_check_filter.input]
-        traces  = [otelcol.processor.filter.health_check_filter.input]
-      }
-    }
-
-    // Step 1.5: Filter out health check endpoints from traces
-    otelcol.processor.filter "health_check_filter" {
-      error_mode = "ignore"
-      
-      traces {
-        span {
-          // Drop traces from health check endpoints using simple exact matches
-          [
-            'attributes["http.route"] == "/healthz"',
-            'attributes["http.route"] == "/readyz"',
-            'attributes["http.route"] == "/health"',
-            'attributes["http.route"] == "/ready"',
-            'attributes["http.target"] == "/healthz"',
-            'attributes["http.target"] == "/readyz"',
-            'attributes["http.target"] == "/health"',
-            'attributes["http.target"] == "/ready"'
-          ]
-        }
-      }
-      
-      output {
         metrics = [otelcol.processor.transform.namespace_to_env.input]
         logs    = [otelcol.processor.transform.namespace_to_env.input]
         traces  = [otelcol.processor.transform.namespace_to_env.input]
       }
     }
+
+    // Step 1.5: Filter out health check endpoints from traces
+    // Note: Temporarily disabled due to Alloy syntax issues
+    // TODO: Re-enable health check filtering once correct Alloy syntax is determined
 
     // Step 2: Transform namespace to environment and add custom attributes
     otelcol.processor.transform "namespace_to_env" {
